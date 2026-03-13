@@ -68,17 +68,24 @@ http://127.0.0.1:5181
 
 ## GitHub Pages 部署
 
-本工程已经内置 GitHub Pages 自动部署工作流，推送到 `main` 分支后会自动构建并发布。
+当前仓库采用 `main / docs` 的静态分支发布方式，不依赖 GitHub Actions。
+
+生成 Pages 发布目录：
+
+```powershell
+cd D:\Work\研二下\故障平台\Code\exp_0312
+npm run build:pages
+```
+
+生成后的静态文件会放在 `docs/` 目录，推送到 GitHub 后，在仓库里设置：
+
+1. `Settings -> Pages`
+2. `Build and deployment -> Source` 选择 `Deploy from a branch`
+3. `Branch` 选择 `main`
+4. `Folder` 选择 `/docs`
 
 预计访问地址：
 
 ```text
 https://blank1cheng.github.io/Guzhang_0313/
 ```
-
-首次启用时，如果仓库页面还没上线，请在 GitHub 仓库中确认：
-
-1. `Settings -> Pages`
-2. `Build and deployment -> Source` 选择 `GitHub Actions`
-
-之后每次推送 `main`，GitHub 会自动重新部署。

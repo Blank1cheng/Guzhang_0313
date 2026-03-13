@@ -8,6 +8,7 @@
     "dev": "vite --host 127.0.0.1 --port 5181",
     "stop:dev": "node scripts/ensure-dev-ports.cjs 5181",
     "build": "vite build",
+    "build:pages": "vite build --outDir docs",
     "preview": "vite preview --host 127.0.0.1 --port 4181"
   },
   "dependencies": {
