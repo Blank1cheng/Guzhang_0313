@@ -1,14 +1,5 @@
 <template>
-  <div class="workbench-shell">
-    <div class="workbench-toolbar">
-      <a-space>
-        <a-button size="small" @click="fitView">适配视图</a-button>
-        <a-button size="small" @click="deleteCurrentSelection">删除选中</a-button>
-      </a-space>
-      <span class="workbench-hint">将左侧模块拖入画布，拖线时请从输出端口连接到输入端口。</span>
-    </div>
-    <div ref="canvasRef" class="workbench-canvas"></div>
-  </div>
+  <div ref="canvasRef" class="workbench-canvas"></div>
 </template>
 
 <script setup>
@@ -100,6 +91,7 @@ function fitView() {
 function addNodeFromDefinition(definition) {
   if (!lf || !definition) return null;
   const node = lf.addNode(definition);
+  fitView();
   emitGraphChange();
   return node;
 }
@@ -129,6 +121,7 @@ function removeNodeById(nodeId) {
 function resetScene(graphData) {
   if (!lf) return;
   lf.render(graphData);
+  fitView();
   emitGraphChange();
 }
 
@@ -142,7 +135,7 @@ function initLogicFlow() {
 
   lf = new LogicFlow({
     container: canvasRef.value,
-    grid: { size: 12, visible: true, type: 'dot', config: { color: 'rgba(89, 141, 211, 0.16)' } },
+    grid: { size: 16, visible: true, type: 'dot', config: { color: 'rgba(154, 172, 196, 0.14)' } },
     keyboard: { enabled: true },
     autoExpand: false,
     background: { backgroundColor: '#fbfdff' },
@@ -151,10 +144,22 @@ function initLogicFlow() {
   registerStudioNodes(lf);
   lf.setTheme({
     polyline: {
-      stroke: '#90b6ff',
-      strokeWidth: 2.2,
-      hoverStroke: '#2f80ff',
-      selectedStroke: '#2f80ff',
+      stroke: '#aabdd6',
+      strokeWidth: 2.1,
+      hoverStroke: '#88a7cd',
+      selectedStroke: '#88a7cd',
+      outlineColor: 'rgba(136, 167, 205, 0.14)',
+    },
+    anchor: {
+      stroke: '#88a7cd',
+      fill: '#ffffff',
+      hoverFill: '#88a7cd',
+      hoverStroke: '#88a7cd',
+      r: 6,
+    },
+    nodeText: {
+      color: '#304b69',
+      fontSize: 12,
     },
   });
 
@@ -239,39 +244,16 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.workbench-shell {
-  display: grid;
-  grid-template-rows: auto 1fr;
-  gap: 8px;
-  height: 100%;
-  min-height: 0;
-}
-
-.workbench-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-  padding: 10px 12px;
-  border: 1px solid rgba(185, 211, 247, 0.86);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow: 0 10px 22px rgba(53, 92, 162, 0.06);
-}
-
-.workbench-hint {
-  color: #6b84a4;
-  font-size: 11px;
-  line-height: 1.5;
-}
-
 .workbench-canvas {
   height: 100%;
   min-height: 0;
   border-radius: 22px;
-  border: 1px solid rgba(191, 214, 246, 0.95);
   overflow: hidden;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  background:
+    radial-gradient(circle at top left, rgba(189, 205, 227, 0.1), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.992), rgba(250, 252, 255, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    inset 0 0 0 1px rgba(212, 222, 235, 0.9);
 }
 </style>

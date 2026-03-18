@@ -26,10 +26,10 @@ function createId(prefix) {
 
 function accentByCategory(category) {
   return {
-    analog: '#dc5a5a',
-    state: '#cf4747',
-    noise: '#d9534f',
-  }[category] || '#d9534f';
+    analog: '#5f88dc',
+    state: '#4d79d3',
+    noise: '#79a7f2',
+  }[category] || '#79a7f2';
 }
 
 function tokenByMode(mode) {
@@ -243,9 +243,9 @@ function createInitialGraph() {
 
   return {
     nodes: [
-      { id: sourceId, type: 'studio-node', x: 220, y: 220, text: '', properties: createSourceProperties(sourcePalette, { name: '主信号源' }) },
-      { id: processId, type: 'studio-node', x: 540, y: 220, text: '', properties: createProcessProperties(processPalette, { name: '流程块 A' }) },
-      { id: scopeId, type: 'studio-node', x: 860, y: 220, text: '', properties: createScopeProperties(scopePalette, { name: '基线示波器' }) },
+      { id: sourceId, type: 'studio-node', x: 180, y: 240, text: '', properties: createSourceProperties(sourcePalette, { name: '主信号源' }) },
+      { id: processId, type: 'studio-node', x: 470, y: 240, text: '', properties: createProcessProperties(processPalette, { name: '流程块 A' }) },
+      { id: scopeId, type: 'studio-node', x: 760, y: 240, text: '', properties: createScopeProperties(scopePalette, { name: '基线示波器' }) },
     ],
     edges: [
       {
@@ -357,11 +357,11 @@ function scenarioGraphFromPreset(presetId, templates) {
     return {
       graph: {
         nodes: [
-          { id: 'source-main', type: 'studio-node', x: 190, y: 250, text: '', properties: createSourceProperties(sourcePalette, { name: '主信号源' }) },
-          { id: 'scope-before', type: 'studio-node', x: 450, y: 110, text: '', properties: createScopeProperties(scopePalette, { name: '注入前示波器' }) },
-          { id: 'fault-electrical', type: 'studio-node', x: 530, y: 250, text: '', properties: createFaultNodeProperties(task, task.templateSnapshot) },
-          { id: 'process-main', type: 'studio-node', x: 850, y: 250, text: '', properties: createProcessProperties(processPalette, { name: '流程块 A' }) },
-          { id: 'scope-after', type: 'studio-node', x: 1150, y: 250, text: '', properties: createScopeProperties(scopePalette, { name: '注入后示波器' }) },
+          { id: 'source-main', type: 'studio-node', x: 180, y: 250, text: '', properties: createSourceProperties(sourcePalette, { name: '主信号源' }) },
+          { id: 'scope-before', type: 'studio-node', x: 390, y: 120, text: '', properties: createScopeProperties(scopePalette, { name: '注入前示波器' }) },
+          { id: 'fault-electrical', type: 'studio-node', x: 470, y: 250, text: '', properties: createFaultNodeProperties(task, task.templateSnapshot) },
+          { id: 'process-main', type: 'studio-node', x: 760, y: 250, text: '', properties: createProcessProperties(processPalette, { name: '流程块 A' }) },
+          { id: 'scope-after', type: 'studio-node', x: 1050, y: 250, text: '', properties: createScopeProperties(scopePalette, { name: '注入后示波器' }) },
         ],
         edges: [
           {
@@ -428,10 +428,10 @@ function scenarioGraphFromPreset(presetId, templates) {
     return {
       graph: {
         nodes: [
-          { id: 'source-main', type: 'studio-node', x: 190, y: 230, text: '', properties: createSourceProperties(sourcePalette, { name: '主信号源' }) },
-          { id: 'process-main', type: 'studio-node', x: 490, y: 230, text: '', properties: createProcessProperties(processPalette, { name: '参数修正流程', processConfig: { mode: 'gain', gain: 1.08, offset: 0.4, memory: 17 } }) },
-          { id: 'fault-physical', type: 'studio-node', x: 810, y: 230, text: '', properties: createFaultNodeProperties(task, task.templateSnapshot) },
-          { id: 'scope-after', type: 'studio-node', x: 1120, y: 230, text: '', properties: createScopeProperties(scopePalette, { name: '物理层示波器' }) },
+          { id: 'source-main', type: 'studio-node', x: 180, y: 240, text: '', properties: createSourceProperties(sourcePalette, { name: '主信号源' }) },
+          { id: 'process-main', type: 'studio-node', x: 450, y: 240, text: '', properties: createProcessProperties(processPalette, { name: '参数修正流程', processConfig: { mode: 'gain', gain: 1.08, offset: 0.4, memory: 17 } }) },
+          { id: 'fault-physical', type: 'studio-node', x: 720, y: 240, text: '', properties: createFaultNodeProperties(task, task.templateSnapshot) },
+          { id: 'scope-after', type: 'studio-node', x: 990, y: 240, text: '', properties: createScopeProperties(scopePalette, { name: '物理层示波器' }) },
         ],
         edges: [
           {
@@ -489,9 +489,9 @@ function scenarioGraphFromPreset(presetId, templates) {
       graph: {
         nodes: [
           { id: 'source-main', type: 'studio-node', x: 170, y: 250, text: '', properties: createSourceProperties(sourcePalette, { name: '协议输入源', sourceConfig: { waveType: 'square', amplitude: 3.4, frequency: 0.12, offset: 16 } }) },
-          { id: 'process-main', type: 'studio-node', x: 450, y: 250, text: '', properties: createProcessProperties(processPalette, { name: '打包流程', processConfig: { mode: 'sum', gain: 1, offset: 0, memory: 0 } }) },
-          { id: 'fault-protocol', type: 'studio-node', x: 760, y: 250, text: '', properties: createFaultNodeProperties(task, task.templateSnapshot) },
-          { id: 'scope-after', type: 'studio-node', x: 1070, y: 250, text: '', properties: createScopeProperties(scopePalette, { name: '链路示波器' }) },
+          { id: 'process-main', type: 'studio-node', x: 430, y: 250, text: '', properties: createProcessProperties(processPalette, { name: '打包流程', processConfig: { mode: 'sum', gain: 1, offset: 0, memory: 0 } }) },
+          { id: 'fault-protocol', type: 'studio-node', x: 690, y: 250, text: '', properties: createFaultNodeProperties(task, task.templateSnapshot) },
+          { id: 'scope-after', type: 'studio-node', x: 950, y: 250, text: '', properties: createScopeProperties(scopePalette, { name: '链路示波器' }) },
         ],
         edges: [
           {
@@ -600,6 +600,71 @@ export function useStudioState() {
     faults: graphNodes.value.filter((node) => node.properties?.group === 'fault').length,
     scopes: graphNodes.value.filter((node) => node.properties?.group === 'scope').length,
   }));
+
+  function nodesByGroup(group) {
+    return graphNodes.value.filter((node) => node.properties?.group === group);
+  }
+
+  function averageCoordinate(nodes, key, fallback) {
+    if (!nodes.length) return fallback;
+    return Math.round(nodes.reduce((total, node) => total + Number(node[key] || 0), 0) / nodes.length);
+  }
+
+  function maxCoordinate(nodes, key, fallback) {
+    if (!nodes.length) return fallback;
+    return Math.max(...nodes.map((node) => Number(node[key] || fallback)));
+  }
+
+  function suggestCanvasPosition(group, position = {}) {
+    if (Number(position.x) && Number(position.y)) {
+      return { x: Number(position.x), y: Number(position.y) };
+    }
+
+    const sourceNodes = nodesByGroup('source');
+    const systemNodes = nodesByGroup('system');
+    const faultNodes = nodesByGroup('fault');
+    const scopeNodes = nodesByGroup('scope');
+    const allNodes = graphNodes.value;
+    const fallbackY = averageCoordinate(allNodes, 'y', 260);
+
+    const xMap = {
+      source: sourceNodes.length
+        ? averageCoordinate(sourceNodes, 'x', 180)
+        : 180,
+      system: systemNodes.length
+        ? averageCoordinate(systemNodes, 'x', 470)
+        : sourceNodes.length && scopeNodes.length
+          ? Math.round((averageCoordinate(sourceNodes, 'x', 180) + averageCoordinate(scopeNodes, 'x', 760)) / 2)
+          : sourceNodes.length
+            ? averageCoordinate(sourceNodes, 'x', 180) + 290
+            : 470,
+      fault: faultNodes.length
+        ? averageCoordinate(faultNodes, 'x', 620)
+        : sourceNodes.length && systemNodes.length
+          ? Math.round((averageCoordinate(sourceNodes, 'x', 180) + averageCoordinate(systemNodes, 'x', 470)) / 2) + 30
+          : systemNodes.length && scopeNodes.length
+            ? Math.round((averageCoordinate(systemNodes, 'x', 470) + averageCoordinate(scopeNodes, 'x', 760)) / 2)
+            : 620,
+      scope: scopeNodes.length
+        ? averageCoordinate(scopeNodes, 'x', 760)
+        : faultNodes.length
+          ? averageCoordinate(faultNodes, 'x', 620) + 280
+          : systemNodes.length
+            ? averageCoordinate(systemNodes, 'x', 470) + 290
+            : 760,
+    };
+
+    const groupNodes = nodesByGroup(group);
+    const y = Number(position.y)
+      || (groupNodes.length
+        ? maxCoordinate(groupNodes, 'y', fallbackY) + 148
+        : fallbackY);
+
+    return {
+      x: Number(position.x) || xMap[group] || 520,
+      y,
+    };
+  }
 
   const libraryGroups = computed(() => [
     {
@@ -811,11 +876,12 @@ export function useStudioState() {
   function buildFaultNodeDefinition(task, position = {}) {
     const template = task.templateSnapshot || faultTemplates.value.find((item) => item.id === task.templateId);
     if (!template) return null;
+    const nextPosition = suggestCanvasPosition('fault', position);
     return {
       id: task.deployedNodeId || createId('fault-node'),
       type: 'studio-node',
-      x: Number(position.x) || 520,
-      y: Number(position.y) || 360,
+      x: nextPosition.x,
+      y: nextPosition.y,
       text: '',
       properties: createFaultNodeProperties(task, template),
     };
@@ -837,11 +903,10 @@ export function useStudioState() {
   }
 
   function deployAllTasksToCanvas() {
-    const baseY = 320;
-    const gapY = 170;
     const pending = injectionTasks.value.filter((task) => !task.deployedNodeId || !graphNodes.value.some((node) => node.id === task.deployedNodeId));
     const definitions = pending.map((task, index) => {
-      const node = buildFaultNodeDefinition(task, { x: 600, y: baseY + index * gapY });
+      const start = suggestCanvasPosition('fault');
+      const node = buildFaultNodeDefinition(task, { x: start.x, y: start.y + index * 148 });
       if (!node) return null;
       injectionTasks.value = injectionTasks.value.map((item) => (
         item.id === task.id ? { ...item, deployedNodeId: node.id } : item
@@ -912,32 +977,35 @@ export function useStudioState() {
     }
 
     if (item.group === 'source') {
+      const nextPosition = suggestCanvasPosition('source', position);
       return {
         id: createId('source-node'),
         type: 'studio-node',
-        x: Number(position.x) || 240,
-        y: Number(position.y) || 360,
+        x: nextPosition.x,
+        y: nextPosition.y,
         text: '',
         properties: createSourceProperties(item, { name: `信号源 ${canvasCounts.value.nodes + 1}` }),
       };
     }
 
     if (item.group === 'scope') {
+      const nextPosition = suggestCanvasPosition('scope', position);
       return {
         id: createId('scope-node'),
         type: 'studio-node',
-        x: Number(position.x) || 920,
-        y: Number(position.y) || 360,
+        x: nextPosition.x,
+        y: nextPosition.y,
         text: '',
         properties: createScopeProperties(item, { name: `示波器 ${canvasCounts.value.scopes + 1}` }),
       };
     }
 
+    const nextPosition = suggestCanvasPosition('system', position);
     return {
       id: createId('process-node'),
       type: 'studio-node',
-      x: Number(position.x) || 580,
-      y: Number(position.y) || 360,
+      x: nextPosition.x,
+      y: nextPosition.y,
       text: '',
       properties: createProcessProperties(item, { name: `流程块 ${canvasCounts.value.nodes + 1}` }),
     };

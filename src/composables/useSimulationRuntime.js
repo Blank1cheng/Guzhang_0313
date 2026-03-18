@@ -27,11 +27,13 @@ function createBootLog() {
   return {
     id: 'log-ready',
     time: timeStamp(),
-    text: '平台已就绪，可开始配置模板、任务与画布连线。',
+    text: '平台已就绪，请先完成模板、任务与画布连线配置。',
   };
 }
 
 export function useSimulationRuntime({ graphNodes, graphEdges, injectionTasks }) {
+  const AUTO_COMPLETION_TAIL_SECONDS = 8;
+
   const runtime = reactive({
     status: 'ready',
     simTime: 0,
@@ -43,7 +45,7 @@ export function useSimulationRuntime({ graphNodes, graphEdges, injectionTasks })
   const speedOptions = [
     { label: '快速 0.25s', value: 250 },
     { label: '标准 0.42s', value: 420 },
-    { label: '稳态 0.65s', value: 650 },
+    { label: '稳定 0.65s', value: 650 },
     { label: '精细 1.00s', value: 1000 },
   ];
 
@@ -63,6 +65,11 @@ export function useSimulationRuntime({ graphNodes, graphEdges, injectionTasks })
     })));
 
   const faultNodes = computed(() => graphNodes.value.filter((node) => node.properties?.group === 'fault'));
+  const graphNodeIdSet = computed(() => new Set(graphNodes.value.map((node) => node.id)));
+
+  function isTaskDeployed(task) {
+    return Boolean(task.deployedNodeId) && graphNodeIdSet.value.has(task.deployedNodeId);
+  }
 
   const normalizedEdges = computed(() => {
     const nodeMap = new Map(graphNodes.value.map((node) => [node.id, node]));
@@ -80,7 +87,7 @@ export function useSimulationRuntime({ graphNodes, graphEdges, injectionTasks })
   });
 
   const taskRows = computed(() => injectionTasks.value.map((task) => {
-    const deployed = Boolean(task.deployedNodeId);
+    const deployed = isTaskDeployed(task);
     const startTime = Number(task.triggerStart);
     const endTime = startTime + Number(task.duration);
     let statusKey = 'undeployed';
@@ -89,16 +96,16 @@ export function useSimulationRuntime({ graphNodes, graphEdges, injectionTasks })
     if (deployed) {
       if (runtime.status === 'ready' && runtime.simTime === 0) {
         statusKey = 'ready';
-        statusLabel = '待运行';
+        statusLabel = '待命';
       } else if (runtime.simTime < startTime) {
         statusKey = 'waiting';
-        statusLabel = '待触发';
+        statusLabel = '等待触发';
       } else if (runtime.simTime <= endTime) {
         statusKey = runtime.status === 'running' ? 'active' : 'paused';
         statusLabel = runtime.status === 'running' ? '执行中' : '已暂停';
       } else if (runtime.simTime <= endTime + 10) {
         statusKey = 'recovery';
-        statusLabel = '恢复跟踪';
+        statusLabel = '恢复中';
       } else {
         statusKey = 'done';
         statusLabel = '已完成';
@@ -113,6 +120,15 @@ export function useSimulationRuntime({ graphNodes, graphEdges, injectionTasks })
       statusLabel,
     };
   }));
+
+  const deployedTaskCount = computed(() => taskRows.value.filter((row) => row.deployed).length);
+  const hasDeployedTasks = computed(() => deployedTaskCount.value > 0);
+  const runtimeHorizonSeconds = computed(() => {
+    const maxEndTime = taskRows.value.reduce((current, row) => (
+      row.deployed ? Math.max(current, Number(row.endTime || 0)) : current
+    ), 0);
+    return Number((Math.max(runtime.stepSize, maxEndTime + AUTO_COMPLETION_TAIL_SECONDS)).toFixed(1));
+  });
 
   const liveScopeSeries = computed(() => {
     const fallbackId = scopeOptions.value[0]?.id || '';
@@ -278,15 +294,22 @@ export function useSimulationRuntime({ graphNodes, graphEdges, injectionTasks })
     result.faultStatusRows.forEach((row) => {
       const wasActive = faultActivationMap.get(row.id) || false;
       if (row.active && !wasActive) {
-        appendLog(`${runtime.simTime.toFixed(1)}s 在 ${row.location} 以 ${injectionMethodLabel(row.method)} 启动 ${row.name}（${layerLabel(row.layer)}）。`);
+        appendLog(`${runtime.simTime.toFixed(1)}s ${row.name} 在 ${row.location} 通过${injectionMethodLabel(row.method)}完成注入，层级为${layerLabel(row.layer)}。`);
       }
       if (!row.active && wasActive) {
-        appendLog(`${runtime.simTime.toFixed(1)}s ${row.name} 注入结束，系统进入恢复跟踪。`);
+        appendLog(`${runtime.simTime.toFixed(1)}s ${row.name} 注入结束，开始进入恢复跟踪。`);
       }
       faultActivationMap.set(row.id, row.active);
     });
 
     runtime.simTime = Number((runtime.simTime + runtime.stepSize).toFixed(1));
+
+    const hasActiveFault = result.faultStatusRows.some((row) => row.active);
+    if (runtime.status === 'running' && runtime.simTime >= runtimeHorizonSeconds.value && !hasActiveFault) {
+      clearRuntimeTimer();
+      runtime.status = 'completed';
+      appendLog(`仿真已运行至 ${runtimeHorizonSeconds.value.toFixed(1)}s，系统自动停止。`);
+    }
   }
 
   function simulateSeries(disableFaults) {
@@ -391,9 +414,9 @@ export function useSimulationRuntime({ graphNodes, graphEdges, injectionTasks })
   const analysisOption = computed(() => buildLineChartOption({
     xAxis: analysisSeries.value.xAxis,
     series: [
-      { name: '无故障状态', data: analysisSeries.value.normal, color: '#8aa4c7', width: 2.1 },
-      { name: '注入故障状态', data: analysisSeries.value.faulty, color: '#2f80ff', width: 2.8 },
-      { name: '恢复后状态', data: analysisSeries.value.recovered, color: '#4cb782', width: 2.2 },
+      { name: '正常', data: analysisSeries.value.normal, color: '#8aa4c7', width: 2.1 },
+      { name: '故障', data: analysisSeries.value.faulty, color: '#2f80ff', width: 2.8 },
+      { name: '恢复', data: analysisSeries.value.recovered, color: '#4cb782', width: 2.2 },
     ],
     showArea: false,
   }));
@@ -409,7 +432,8 @@ export function useSimulationRuntime({ graphNodes, graphEdges, injectionTasks })
     liveSignal: currentSignalValue.value,
     scopeCount: scopeOptions.value.length,
     deployedFaultCount: faultNodes.value.length,
-    readyTaskCount: taskRows.value.filter((row) => row.statusKey !== 'undeployed').length,
+    readyTaskCount: deployedTaskCount.value,
+    horizonSeconds: runtimeHorizonSeconds.value,
   }));
 
   function ensureActiveScope() {
@@ -419,33 +443,59 @@ export function useSimulationRuntime({ graphNodes, graphEdges, injectionTasks })
   }
 
   function start() {
+    if (!hasDeployedTasks.value) {
+      appendLog('未发现已部署任务，请先部署至少一个任务后再启动仿真。');
+      runtime.status = 'ready';
+      return false;
+    }
+    if (runtime.status === 'running') return true;
+
     ensureActiveScope();
     clearRuntimeTimer();
+    if (runtime.status === 'stopped' || runtime.status === 'completed') {
+      runtime.simTime = 0;
+      clearRuntimeCache();
+    }
     runtime.status = 'running';
-    appendLog('执行模式已切换为连续运行。');
+    appendLog('仿真已切换为连续执行。');
     runtimeTimer = window.setInterval(runSingleTick, runtime.tickIntervalMs);
+    return true;
   }
 
   function pause() {
+    if (runtime.status !== 'running') return false;
     clearRuntimeTimer();
     runtime.status = 'paused';
-    appendLog('执行已暂停，可继续单步调试。');
+    appendLog('仿真已暂停，可继续执行或单步推进。');
+    return true;
   }
 
   function stop() {
+    if (runtime.status === 'stopped') return false;
     clearRuntimeTimer();
     runtime.status = 'stopped';
     runtime.simTime = 0;
     clearRuntimeCache();
-    appendLog('执行已终止，运行态缓存已释放。');
+    appendLog('仿真已终止，运行缓存已重置。');
+    return true;
   }
 
   function stepOnce() {
+    if (!hasDeployedTasks.value) {
+      appendLog('未发现已部署任务，请先部署任务后再执行单步推进。');
+      runtime.status = 'ready';
+      return false;
+    }
+
     clearRuntimeTimer();
-    if (runtime.status === 'stopped') runtime.simTime = 0;
+    if (runtime.status === 'stopped' || runtime.status === 'completed') {
+      runtime.simTime = 0;
+      clearRuntimeCache();
+    }
     runtime.status = 'paused';
     runSingleTick();
-    appendLog('已执行单步仿真。');
+    appendLog('已执行一个仿真步长。');
+    return true;
   }
 
   function exportReportPayload() {
@@ -492,7 +542,7 @@ export function useSimulationRuntime({ graphNodes, graphEdges, injectionTasks })
     [graphNodes, graphEdges],
     () => {
       clearRuntimeTimer();
-      runtime.status = runtime.status === 'stopped' ? 'stopped' : 'ready';
+      runtime.status = 'ready';
       runtime.simTime = 0;
       clearRuntimeCache();
       ensureActiveScope();
@@ -516,6 +566,9 @@ export function useSimulationRuntime({ graphNodes, graphEdges, injectionTasks })
     analysisOption,
     analysisMetrics,
     taskRows,
+    deployedTaskCount,
+    hasDeployedTasks,
+    runtimeHorizonSeconds,
     runtimeOverview,
     start,
     pause,

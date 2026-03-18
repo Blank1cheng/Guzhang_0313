@@ -2,8 +2,8 @@
   <section class="panel-card inspector-panel">
     <div class="panel-head">
       <div>
-        <h3>属性栏</h3>
-        <p>显示当前选中节点或连线的详细参数，并允许直接微调配置。</p>
+        <h3>属性面板</h3>
+        <p>查看当前选中节点或连线的关键参数，并直接微调配置。</p>
       </div>
       <a-button danger @click="emit('delete-selection')">删除选中</a-button>
     </div>
@@ -28,6 +28,7 @@
             </a-select-option>
           </a-select>
         </div>
+
         <div class="field-grid">
           <div class="field-block">
             <label>幅值</label>
@@ -57,6 +58,7 @@
             </a-select-option>
           </a-select>
         </div>
+
         <div class="field-grid">
           <div class="field-block">
             <label>输入端口数</label>
@@ -95,7 +97,7 @@
             <strong>{{ modeLabel(selectedNode.properties.mode) }}</strong>
           </div>
           <div class="summary-card summary-card--mini">
-            <span>故障层级</span>
+            <span>注入层级</span>
             <strong>{{ layerLabel(selectedNode.properties.injectionLayer) }}</strong>
           </div>
           <div class="summary-card summary-card--mini">
@@ -162,15 +164,13 @@
     </div>
 
     <div v-else-if="selectedEdge" class="empty-card">
-      <strong>已选择连线</strong>
-      <p>{{ selectedEdge.sourceNodeId }} -> {{ selectedEdge.targetNodeId }}</p>
-      <span>当前连线用于表达信号流向，系统会自动根据端口解析输入输出关系。</span>
+      <strong>已选中连线</strong>
+      <p>当前连线：{{ selectedEdge.sourceNodeId }} -> {{ selectedEdge.targetNodeId }}。系统会按端口关系自动解析信号流向。</p>
     </div>
 
     <div v-else class="empty-card">
       <strong>未选择节点</strong>
-      <p>点击画布中的模块或连线后，这里会显示对应属性。</p>
-      <span>故障节点会展示故障模式、故障类型、层级、注入方式和触发规则。</span>
+      <p>点击画布中的模块或连线后，这里会显示对应属性。故障节点会展示模式、类型、层级、方式和触发窗口。</p>
     </div>
   </section>
 </template>
@@ -253,7 +253,7 @@ function patchFaultWindow(key, value) {
 .inspector-panel {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  gap: 12px;
+  gap: 14px;
   height: 100%;
   min-height: 0;
 }
@@ -289,17 +289,18 @@ function patchFaultWindow(key, value) {
 .summary-card,
 .empty-card,
 .fault-preview-card {
-  padding: 12px;
+  padding: 14px;
   border: 1px solid rgba(188, 212, 247, 0.9);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.84);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 10px 20px rgba(60, 99, 169, 0.04);
 }
 
 .summary-card span,
 .empty-card span {
   display: block;
   color: #728aa8;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -354,7 +355,7 @@ function patchFaultWindow(key, value) {
 
 .chart-head span {
   color: #7a90ac;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 @media (max-width: 980px) {

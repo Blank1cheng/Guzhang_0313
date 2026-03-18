@@ -7,7 +7,7 @@ export const faultCategoryOptions = [
 export const faultTypeOptionsByCategory = {
   analog: [
     { value: 'bias', label: '偏置故障' },
-    { value: 'drift', label: '渐变故障' },
+    { value: 'drift', label: '漂移故障' },
   ],
   state: [
     { value: 'interruption', label: '状态突变' },
@@ -40,7 +40,7 @@ export const faultParameterSchemasByMode = {
     { key: 'severity', label: '基础严重度', step: 0.01, min: 0.1, max: 1.2, unit: '' },
   ],
   interruption: [
-    { key: 'severity', label: '阻塞比例', step: 0.01, min: 0.1, max: 1.2, unit: '' },
+    { key: 'severity', label: '中断比例', step: 0.01, min: 0.1, max: 1.2, unit: '' },
   ],
   stuck: [
     { key: 'bias', label: '卡滞值', step: 0.1, unit: '' },
@@ -49,7 +49,7 @@ export const faultParameterSchemasByMode = {
 };
 
 export const injectionLayerOptions = [
-  { value: 'physical', label: '物理层', description: '物理参数修改式注入' },
+  { value: 'physical', label: '物理层', description: '物理参数修正式注入' },
   { value: 'electrical', label: '电气层', description: '信号叠加式注入' },
   { value: 'protocol', label: '协议层', description: '通信链路数据篡改式注入' },
 ];
@@ -58,7 +58,7 @@ export const injectionMethodOptionsByLayer = {
   physical: [
     {
       value: 'param_modify',
-      label: '物理参数修改式注入',
+      label: '物理参数修正式注入',
       factorLabel: '参数修正系数',
       hint: '对模板核心参数做物理量级修正，适合传感器、执行器和参数组。',
     },
@@ -74,7 +74,7 @@ export const injectionMethodOptionsByLayer = {
   protocol: [
     {
       value: 'data_tamper',
-      label: '通信链路数据篡改式注入',
+      label: '链路篡改式注入',
       factorLabel: '篡改覆盖系数',
       hint: '对数据帧或链路字段进行量化、覆盖或扰动，适合协议层验证。',
     },
@@ -142,7 +142,7 @@ export const initialFaultTemplates = [
     variance: 5,
     bias: 0,
     severity: 0.58,
-    accent: '#d9534f',
+    accent: '#79a7f2',
     token: 'GN',
   },
   {
@@ -154,31 +154,31 @@ export const initialFaultTemplates = [
     variance: 0,
     bias: 18,
     severity: 0.62,
-    accent: '#cf3f3f',
+    accent: '#5f88dc',
     token: 'BO',
   },
   {
     id: 'tpl-drift-nav',
-    templateName: '渐变故障_导航',
+    templateName: '漂移故障_导航',
     category: 'analog',
     mode: 'drift',
     mean: 0,
     variance: 0.18,
     bias: 10,
     severity: 0.48,
-    accent: '#df6666',
+    accent: '#688fdf',
     token: 'DF',
   },
   {
     id: 'tpl-link-cut',
-    templateName: '状态突变_链路',
+    templateName: '状态突变_CAN链路',
     category: 'state',
     mode: 'interruption',
     mean: 0,
     variance: 0,
     bias: 0,
     severity: 0.72,
-    accent: '#c44747',
+    accent: '#4d79d3',
     token: 'SI',
   },
 ];
@@ -190,7 +190,7 @@ export const nodePalette = [
     label: '信号源',
     subtitle: '标准波形源',
     token: 'SRC',
-    accent: '#2f7fff',
+    accent: '#4f86e7',
     fill: '#f7fbff',
     sourceConfig: { waveType: 'sine', amplitude: 4.2, frequency: 0.18, offset: 17, phase: 0, duty: 50 },
   },
@@ -200,7 +200,7 @@ export const nodePalette = [
     label: '流程块',
     subtitle: '通用信号处理节点',
     token: 'SYS',
-    accent: '#6387ef',
+    accent: '#6f9aed',
     fill: '#f8fbff',
     processConfig: { mode: 'gain', gain: 1.05, offset: 0, memory: 17 },
   },
@@ -210,7 +210,7 @@ export const nodePalette = [
     label: '示波器',
     subtitle: '监测实时曲线',
     token: 'SCP',
-    accent: '#4a88ff',
+    accent: '#86aff7',
     fill: '#f6faff',
     scopeConfig: { sampleWindow: 80 },
   },

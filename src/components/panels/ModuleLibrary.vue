@@ -97,7 +97,7 @@ function toggleAllGroups(collapse) {
 .library-panel {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  gap: 14px;
+  gap: 16px;
   height: 100%;
   min-height: 0;
 }
@@ -129,7 +129,7 @@ function toggleAllGroups(collapse) {
 .panel-head-actions {
   display: grid;
   justify-items: end;
-  gap: 8px;
+  gap: 10px;
 }
 
 .library-summary {
@@ -142,13 +142,13 @@ function toggleAllGroups(collapse) {
   border-radius: 999px;
   background: rgba(47, 128, 255, 0.1);
   color: #2f80ff;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 
 .library-groups {
   display: grid;
-  gap: 12px;
+  gap: 14px;
   align-content: start;
   min-height: 0;
   overflow: auto;
@@ -187,7 +187,7 @@ function toggleAllGroups(collapse) {
 .group-meta span,
 .group-meta em {
   color: #7a8fa9;
-  font-size: 11px;
+  font-size: 12px;
   font-style: normal;
 }
 
@@ -201,8 +201,9 @@ function toggleAllGroups(collapse) {
   gap: 8px;
   padding: 12px;
   border: 1px solid rgba(189, 213, 247, 0.92);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.84);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 10px 20px rgba(60, 99, 169, 0.04);
 }
 
 .item-main {
@@ -218,7 +219,7 @@ function toggleAllGroups(collapse) {
   border-radius: 12px;
   display: grid;
   place-items: center;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   flex-shrink: 0;
 }
@@ -238,7 +239,7 @@ function toggleAllGroups(collapse) {
   display: block;
   margin-top: 3px;
   color: #7490ad;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
