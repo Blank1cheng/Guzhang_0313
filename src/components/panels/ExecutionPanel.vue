@@ -168,6 +168,12 @@ const reversedLogs = computed(() => [...props.logs].reverse());
   overflow: hidden;
 }
 
+.execution-panel {
+  gap: 12px;
+  padding: 16px;
+  border-radius: 24px;
+}
+
 .panel-head {
   display: flex;
   align-items: flex-start;
@@ -202,6 +208,11 @@ const reversedLogs = computed(() => [...props.logs].reverse());
   font-weight: 700;
 }
 
+.meta-chip {
+  padding: 6px 11px;
+  font-size: 11px;
+}
+
 .panel-head h3 {
   margin: 0;
   color: var(--text-strong, #17365d);
@@ -210,11 +221,19 @@ const reversedLogs = computed(() => [...props.logs].reverse());
   letter-spacing: -0.03em;
 }
 
+.panel-head h3 {
+  font-size: 24px;
+}
+
 .panel-head p {
   margin: 0;
   color: var(--muted, #6783a7);
   font-size: 13px;
   line-height: 1.5;
+}
+
+.panel-head p {
+  font-size: 12px;
 }
 
 .execution-topline {
@@ -236,12 +255,24 @@ const reversedLogs = computed(() => [...props.logs].reverse());
   overflow: hidden;
 }
 
+.control-card,
+.kpi-card,
+.scope-card,
+.monitor-card {
+  padding: 14px;
+  border-radius: 20px;
+}
+
 .control-card {
   display: grid;
   gap: 12px;
   background:
     radial-gradient(circle at top right, rgba(234, 137, 57, 0.08), transparent 24%),
     linear-gradient(180deg, rgba(248, 251, 255, 0.98), rgba(255, 255, 255, 0.92));
+}
+
+.control-card {
+  gap: 10px;
 }
 
 .section-mini-head {
@@ -256,9 +287,17 @@ const reversedLogs = computed(() => [...props.logs].reverse());
   font-size: 15px;
 }
 
+.section-mini-head strong {
+  font-size: 14px;
+}
+
 .section-mini-head span {
   color: var(--muted, #6783a7);
   font-size: 12px;
+}
+
+.section-mini-head span {
+  font-size: 11px;
 }
 
 .control-row {
@@ -319,6 +358,10 @@ const reversedLogs = computed(() => [...props.logs].reverse());
   line-height: 1.1;
 }
 
+.kpi-card strong {
+  font-size: 24px;
+}
+
 .execution-body {
   display: grid;
   grid-template-columns: minmax(0, 1.14fr) minmax(320px, 0.86fr);
@@ -326,10 +369,18 @@ const reversedLogs = computed(() => [...props.logs].reverse());
   min-height: 0;
 }
 
+.execution-body {
+  gap: 12px;
+}
+
 .scope-card {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 12px;
+}
+
+.scope-card {
+  gap: 10px;
 }
 
 .scope-card__head {
@@ -343,6 +394,10 @@ const reversedLogs = computed(() => [...props.logs].reverse());
 .scope-card__head strong {
   color: var(--text-strong, #17365d);
   font-size: 16px;
+}
+
+.scope-card__head strong {
+  font-size: 15px;
 }
 
 .scope-card__head span {
@@ -367,10 +422,36 @@ const reversedLogs = computed(() => [...props.logs].reverse());
   min-height: 0;
 }
 
+.monitor-column {
+  gap: 10px;
+}
+
 .monitor-card {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   gap: 10px;
+}
+
+.task-row,
+.log-line {
+  border-radius: 14px;
+}
+
+.task-row__main span,
+.log-line p,
+.empty-state,
+.runtime-select span,
+.runtime-chip,
+.scope-footer span,
+.scope-summary__item {
+  font-size: 11px;
+}
+
+.control-row__main :deep(.ant-btn),
+.panel-head__meta :deep(.ant-btn),
+.section-mini-head :deep(.ant-btn) {
+  height: 34px;
+  border-radius: 999px;
 }
 
 .task-list,
@@ -500,5 +581,78 @@ const reversedLogs = computed(() => [...props.logs].reverse());
   .monitor-column {
     grid-template-rows: repeat(2, minmax(240px, 1fr));
   }
+}
+
+.execution-panel {
+  gap: 12px;
+  padding: 16px;
+}
+
+.panel-head h3 {
+  font-size: 24px;
+  letter-spacing: -0.025em;
+}
+
+.panel-head p,
+.section-mini-head span,
+.scope-card__head span,
+.scope-summary__item,
+.scope-footer span,
+.task-row__main span,
+.log-line span,
+.log-line p {
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.meta-chip {
+  padding: 6px 11px;
+  font-size: 11px;
+}
+
+.execution-topline {
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+}
+
+.control-card,
+.kpi-card,
+.scope-card,
+.monitor-card {
+  padding: 14px;
+  border-radius: 18px;
+}
+
+.control-row__main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.control-row__main :deep(.ant-btn-dangerous) {
+  margin-left: 6px;
+}
+
+.kpi-card strong {
+  font-size: 22px;
+}
+
+.scope-card :deep(.echarts-for-react),
+.scope-card :deep(canvas) {
+  border-radius: 14px;
+}
+
+.task-row,
+.log-line {
+  padding-block: 10px;
+}
+
+.task-row + .task-row,
+.log-line + .log-line {
+  border-top: 1px solid rgba(210, 223, 244, 0.86);
+}
+
+.empty-state {
+  min-height: 96px;
+  border-radius: 16px;
 }
 </style>

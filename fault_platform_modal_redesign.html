@@ -1,0 +1,620 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans,sans-serif);font-size:11px;color:var(--color-text-primary,#1a2e44)}
+
+/* ─── TOGGLE ─── */
+.view-toggle{display:flex;gap:8px;margin-bottom:10px;align-items:center}
+.vt-btn{padding:5px 14px;border-radius:8px;border:1px solid rgba(185,210,248,0.8);font-size:10px;cursor:pointer;background:rgba(255,255,255,0.9);color:#5a7fa8;font-family:inherit;transition:all 0.15s}
+.vt-btn.active{background:#2f80ff;border-color:#2f80ff;color:#fff}
+.vt-hint{font-size:9px;color:#8aa3bf}
+
+/* ─── PLATFORM SHELL ─── */
+.platform{width:100%;border-radius:14px;overflow:hidden;border:1px solid rgba(180,210,248,0.6);position:relative;background:var(--color-background-tertiary,#eef3fb)}
+
+/* HEADER */
+.hdr{background:rgba(255,255,255,0.97);border-bottom:1px solid rgba(185,212,248,0.7);padding:9px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.hdr-kicker{background:rgba(47,128,255,0.1);color:#2f80ff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:999px;letter-spacing:0.06em}
+.hdr-title{font-size:14px;font-weight:500;color:#1e3a5f;margin-top:2px}
+.hdr-desc{font-size:9px;color:#7a94b3}
+.hdr-metrics{display:flex;gap:10px}
+.hdr-metric span{display:block;color:#8aa3bf;font-size:8px}
+.hdr-metric strong{color:#274a73;font-size:12px}
+.hdr-btns{display:flex;gap:5px}
+.btn{padding:4px 9px;border-radius:7px;font-size:10px;cursor:pointer;border:1px solid rgba(185,210,248,0.8);background:rgba(255,255,255,0.9);color:#3a6090;font-family:inherit}
+.btn-primary{background:#2f80ff;border-color:#2f80ff;color:#fff}
+.btn-danger{border-color:rgba(200,79,79,0.5);color:#c84f4f;background:rgba(200,79,79,0.06)}
+.btn-model{background:rgba(120,70,220,0.1);border-color:rgba(120,70,220,0.4);color:#6020b0}
+.status-pill{background:rgba(47,128,255,0.1);color:#2f80ff;padding:3px 9px;border-radius:999px;font-size:9px;font-weight:700}
+
+/* TABS */
+.tabs{background:rgba(255,255,255,0.92);border-bottom:1px solid rgba(185,212,248,0.6);padding:0 14px;display:flex;gap:0}
+.tab{padding:7px 13px;font-size:10px;cursor:pointer;border-bottom:2px solid transparent;color:#7a94b3;white-space:nowrap}
+.tab .tl{display:block;color:#a0b4cc;font-size:8px;margin-bottom:1px}
+.tab .tt{font-weight:500;font-size:10px}
+.tab.active{border-bottom-color:#2f80ff}
+.tab.active .tl{color:#7ab3ff}
+.tab.active .tt{color:#2f80ff}
+
+/* MAIN 3-col */
+.main{display:grid;grid-template-columns:230px 1fr 272px;gap:8px;padding:8px;height:560px;overflow:hidden}
+.col{display:flex;flex-direction:column;gap:7px;height:100%;overflow:hidden}
+
+/* Cards */
+.card{background:rgba(255,255,255,0.9);border:1px solid rgba(188,212,247,0.85);border-radius:12px;padding:9px 11px;flex-shrink:0}
+.ch{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:7px}
+.ch h4{font-size:11px;font-weight:500;color:#2d4e78;margin-bottom:1px}
+.ch p{font-size:8px;color:#7a94b3;line-height:1.4}
+.sidx{width:19px;height:19px;border-radius:5px;background:rgba(47,128,255,0.1);color:#2f80ff;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* Template library in left col */
+.tmpl-lib{display:flex;flex-direction:column;gap:4px;overflow-y:auto;flex:1;padding-right:2px}
+.tmpl-item{padding:6px 8px;border-radius:8px;background:rgba(245,249,255,0.9);border:1px solid rgba(188,212,247,0.7);display:flex;align-items:center;gap:5px;flex-shrink:0;cursor:grab}
+.tmpl-drag{color:#aac0d8;font-size:10px}
+.tmpl-item strong{display:block;font-size:9px;color:#30527b;font-weight:500}
+.tmpl-item span{display:block;font-size:8px;color:#8aa3bf;margin-top:1px}
+.tmpl-cat{display:inline-block;padding:1px 5px;border-radius:4px;font-size:7px;font-weight:700;margin-bottom:2px}
+.cat-noise{background:rgba(220,80,50,0.1);color:#a03010}
+.cat-analog{background:rgba(47,128,255,0.1);color:#1040a0}
+.cat-state{background:rgba(160,90,220,0.1);color:#5010a0}
+
+/* Exec summary in left col */
+.exec-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.exec-box{padding:6px 7px;border-radius:8px;background:rgba(245,249,255,0.9)}
+.exec-box span{display:block;font-size:8px;color:#8aa3bf;margin-bottom:2px}
+.exec-box strong{font-size:13px;font-weight:500;color:#2b4d76}
+.exec-status{font-size:10px;font-weight:500;color:#2f80ff}
+.exec-btns{display:flex;gap:5px;margin-top:7px}
+
+/* ── CENTER canvas ── */
+.canvas-shell{flex:1;min-height:0;display:flex;gap:6px;overflow:hidden}
+.fault-lib{width:80px;flex-shrink:0;background:rgba(255,255,255,0.88);border:1px solid rgba(188,212,247,0.85);border-radius:10px;padding:6px;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
+.fl-title{font-size:7px;font-weight:700;color:#6a89ad;margin-bottom:2px;text-transform:uppercase;letter-spacing:0.05em}
+.fl-node{padding:5px 5px;border-radius:6px;background:rgba(248,252,255,0.9);border:1px solid rgba(188,212,247,0.8);cursor:grab;font-size:8px;color:#335878;text-align:center;flex-shrink:0;line-height:1.3}
+.fl-node.fn{background:rgba(255,238,232,0.95);border-color:rgba(210,110,80,0.45);color:#803020}
+.fl-node.fs{background:rgba(240,248,255,0.95);border-color:rgba(120,175,240,0.5);color:#1a4a90}
+.fl-node.fg{background:rgba(235,248,240,0.95);border-color:rgba(90,185,135,0.5);color:#1a6040}
+.fl-node .fl-sub{font-size:7px;color:#9ab0c8;margin-top:1px}
+
+.canvas-area{flex:1;min-height:0;background:rgba(250,253,255,0.96);border:1px solid rgba(191,214,246,0.9);border-radius:12px;position:relative;overflow:hidden}
+.canvas-tb{display:flex;align-items:center;justify-content:space-between;padding:5px 9px;border-bottom:1px solid rgba(191,214,246,0.6)}
+.canvas-hint{font-size:8px;color:#7a94b3}
+.canvas-body{position:relative;width:100%;height:calc(100% - 30px);overflow:hidden}
+.canvas-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+
+.cn{position:absolute;border-radius:9px;border:1px solid;padding:5px 7px;font-size:8px;text-align:center;cursor:pointer}
+.cn-title{font-weight:500;font-size:8px;margin-bottom:1px}
+.cn-src{background:rgba(235,250,241,0.95);border-color:rgba(80,180,130,0.6);color:#1a6040}
+.cn-fault{background:rgba(255,232,224,0.97);border-color:rgba(210,90,60,0.65);color:#802010}
+.cn-sys{background:rgba(235,245,255,0.95);border-color:rgba(80,140,210,0.6);color:#154090}
+.cn-scope{background:rgba(245,235,255,0.95);border-color:rgba(140,90,200,0.5);color:#4a1a80}
+.cn-badge{font-size:7px;padding:1px 5px;border-radius:999px;background:rgba(210,90,60,0.12);color:#802010;margin-top:2px;display:inline-block}
+.sel-ring{box-shadow:0 0 0 2px rgba(220,90,60,0.55)!important}
+
+/* prop panel */
+.prop-panel{width:148px;flex-shrink:0;background:rgba(255,255,255,0.9);border:1px solid rgba(188,212,247,0.85);border-radius:11px;padding:8px;display:flex;flex-direction:column;gap:5px;overflow-y:auto}
+.pp-title{font-size:10px;font-weight:500;color:#2d4e78;border-bottom:1px solid rgba(188,212,247,0.5);padding-bottom:4px;margin-bottom:1px}
+.ps{background:rgba(245,249,255,0.9);border-radius:7px;padding:5px 6px}
+.ps .pl{font-size:7px;color:#8aa3bf;margin-bottom:1px}
+.ps .pv{font-size:10px;font-weight:500;color:#2b4d76}
+.ps .psub{font-size:7px;color:#7a94b3;margin-top:1px}
+.ptag{display:inline-block;padding:2px 5px;border-radius:999px;font-size:7px;font-weight:700;margin-top:2px}
+.tag-n{background:rgba(220,80,50,0.1);color:#9a2010}
+.tag-e{background:rgba(47,128,255,0.12);color:#1040c0}
+.tag-ov{background:rgba(62,183,127,0.12);color:#1a6040}
+.pp-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.pb{background:rgba(248,252,255,0.9);border-radius:5px;padding:3px 5px}
+.pb .pbl{font-size:7px;color:#8aa3bf}
+.pb .pbv{font-size:9px;font-weight:500;color:#2b4d76}
+.div-line{border:none;border-top:1px solid rgba(188,212,247,0.5);margin:2px 0}
+
+/* RIGHT col */
+.field{display:flex;flex-direction:column;gap:3px;margin-bottom:5px}
+.field label{font-size:8px;font-weight:700;color:#4d6888}
+.field input,.field select{border:1px solid rgba(185,210,248,0.8);border-radius:5px;padding:3px 6px;font-size:9px;color:#2d4e78;background:rgba(248,252,255,0.9);font-family:inherit;outline:none;width:100%}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.layer-group{display:flex;gap:3px;margin-bottom:5px}
+.lb{flex:1;padding:4px 0;border-radius:6px;border:1px solid rgba(185,210,248,0.8);font-size:8px;text-align:center;cursor:pointer;color:#5a7fa8;background:rgba(248,252,255,0.9)}
+.lb.le{background:rgba(47,128,255,0.1);border-color:rgba(47,128,255,0.55);color:#1050c0;font-weight:700}
+.method-card{padding:6px 8px;border-radius:8px;background:rgba(47,128,255,0.07);border:1px solid rgba(47,128,255,0.22);margin-bottom:6px}
+.mc-l{font-size:7px;color:#5a80b0;margin-bottom:1px}
+.mc-v{font-size:10px;font-weight:500;color:#1a4080}
+.mc-h{font-size:7px;color:#7a94b3;margin-top:2px;line-height:1.4}
+
+.task-list{display:flex;flex-direction:column;gap:4px;overflow-y:auto;flex:1;padding-right:2px}
+.ti{padding:6px 7px;border-radius:8px;background:rgba(245,249,255,0.9);border:1px solid rgba(188,212,247,0.7);flex-shrink:0}
+.ti-head{display:flex;align-items:center;justify-content:space-between;gap:3px;margin-bottom:2px}
+.ti-head strong{font-size:8px;color:#30527b;font-weight:500}
+.ts{font-size:7px;padding:1px 5px;border-radius:999px;font-weight:700}
+.ts-dep{background:rgba(62,183,127,0.12);color:#1a7040}
+.ts-wait{background:rgba(47,128,255,0.1);color:#2f80ff}
+.ti span{display:block;font-size:7px;color:#8aa3bf;line-height:1.4}
+.ti-method{display:inline-flex;align-items:center;gap:2px;margin-top:2px;font-size:7px;padding:1px 5px;border-radius:5px}
+.tm-e{background:rgba(47,128,255,0.08);color:#2060c0}
+.tm-p{background:rgba(62,183,127,0.08);color:#1a6040}
+
+.layer-legend{margin-top:6px;padding:6px 7px;border-radius:8px;background:rgba(245,249,255,0.9);border:1px solid rgba(188,212,247,0.6);flex-shrink:0}
+.ll-row{display:flex;align-items:center;gap:4px;font-size:7px;margin-bottom:3px}
+.ll-row:last-child{margin-bottom:0}
+.ll-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+
+/* ─── MODAL OVERLAY ─── */
+.modal-overlay{position:absolute;inset:0;background:rgba(20,40,80,0.45);display:flex;align-items:center;justify-content:center;z-index:100;border-radius:14px}
+.modal{background:rgba(255,255,255,0.98);border-radius:14px;border:1px solid rgba(188,212,247,0.9);width:680px;max-width:94%;height:520px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(30,60,120,0.18)}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid rgba(188,212,247,0.6);flex-shrink:0}
+.modal-hdr h3{font-size:13px;font-weight:500;color:#1e3a5f}
+.modal-hdr p{font-size:9px;color:#7a94b3;margin-top:1px}
+.modal-close{width:24px;height:24px;border-radius:6px;border:1px solid rgba(185,210,248,0.8);background:rgba(248,252,255,0.9);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;color:#7a94b3}
+.modal-body{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;flex:1;min-height:0;overflow:hidden}
+.modal-step{padding:12px 14px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;border-right:1px solid rgba(188,212,247,0.5)}
+.modal-step:last-child{border-right:none}
+.step-label{display:inline-flex;align-items:center;gap:5px;margin-bottom:4px}
+.step-num{width:18px;height:18px;border-radius:5px;background:rgba(47,128,255,0.1);color:#2f80ff;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.step-title{font-size:11px;font-weight:500;color:#2d4e78}
+.step-desc{font-size:8px;color:#7a94b3;margin-bottom:6px;line-height:1.5}
+.cat-group{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}
+.cat-pill{padding:3px 8px;border-radius:999px;border:1px solid rgba(185,210,248,0.8);font-size:9px;color:#5a7fa8;cursor:pointer;background:rgba(248,252,255,0.9)}
+.cat-pill.active{background:#2f80ff;border-color:#2f80ff;color:#fff}
+.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:6px}
+.type-tile{padding:6px 7px;border:1px solid rgba(185,210,248,0.8);border-radius:8px;cursor:pointer;background:rgba(248,252,255,0.7);text-align:left}
+.type-tile.active{border-color:rgba(47,128,255,0.65);background:rgba(47,128,255,0.07)}
+.type-tile strong{display:block;font-size:9px;color:#31527c;font-weight:500}
+.type-tile span{display:block;font-size:7px;color:#8aa3bf;margin-top:1px;line-height:1.3}
+.param-row{display:grid;grid-template-columns:1fr 100px;gap:6px;align-items:center;padding:6px 7px;border-radius:8px;background:rgba(245,249,255,0.9);margin-bottom:4px}
+.param-copy strong{display:block;font-size:9px;color:#31527c;font-weight:500}
+.param-copy span{display:block;font-size:7px;color:#8aa3bf;margin-top:2px;line-height:1.4}
+.param-input{border:1px solid rgba(185,210,248,0.8);border-radius:5px;padding:3px 6px;font-size:9px;color:#2d4e78;background:rgba(248,252,255,0.9);font-family:inherit;outline:none;width:100%}
+.chart-ph{height:52px;border-radius:7px;background:rgba(245,249,255,0.9);border:1px solid rgba(188,212,247,0.6);overflow:hidden;margin-top:2px}
+.tmpl-saved{padding:6px 7px;border-radius:8px;background:rgba(245,249,255,0.9);border:1px solid rgba(188,212,247,0.7);margin-bottom:4px}
+.tmpl-saved strong{display:block;font-size:9px;color:#30527b;font-weight:500}
+.tmpl-saved span{display:block;font-size:7px;color:#8aa3bf;margin-top:1px}
+.modal-footer{padding:8px 14px;border-top:1px solid rgba(188,212,247,0.5);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-footer p{font-size:8px;color:#8aa3bf}
+
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(188,212,247,0.7);border-radius:2px}
+</style>
+
+<!-- VIEW TOGGLE -->
+<div class="view-toggle">
+  <button class="vt-btn active" onclick="showView('main')">主界面视图</button>
+  <button class="vt-btn" onclick="showView('modal')">故障建模窗口（弹窗）</button>
+  <span class="vt-hint">· 点击切换预览两种界面状态</span>
+</div>
+
+<div class="platform" id="platform">
+
+  <!-- HEADER -->
+  <div class="hdr">
+    <div>
+      <div class="hdr-kicker">EXP_0312</div>
+      <div class="hdr-title">故障注入平台</div>
+      <div class="hdr-desc">面向物理层 · 电气层 · 协议层的分层故障注入工作台</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="status-pill">● 就绪</div>
+      <div style="font-size:9px;color:#7a94b3">仿真时间 0.0s</div>
+      <div class="hdr-metrics">
+        <div class="hdr-metric"><span>节点</span><strong>5</strong></div>
+        <div class="hdr-metric"><span>连线</span><strong>4</strong></div>
+        <div class="hdr-metric"><span>故障</span><strong>1</strong></div>
+        <div class="hdr-metric"><span>任务</span><strong>2</strong></div>
+      </div>
+      <div class="hdr-btns">
+        <button class="btn btn-model" onclick="showView('modal')">＋ 故障建模</button>
+        <button class="btn">导出</button>
+        <button class="btn btn-primary">一键部署</button>
+        <button class="btn btn-danger">重置</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active"><div class="tl">总览</div><div class="tt">主界面工作台</div></div>
+    <div class="tab"><div class="tl">执行</div><div class="tt">故障注入执行</div></div>
+    <div class="tab"><div class="tl">分析</div><div class="tt">结果分析</div></div>
+  </div>
+
+  <!-- MAIN 3-col -->
+  <div class="main">
+
+    <!-- ── LEFT: 模板库 + 执行摘要 ── -->
+    <div class="col">
+
+      <!-- 故障模板库 -->
+      <div class="card" style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column">
+        <div class="ch" style="flex-shrink:0">
+          <div style="display:flex;gap:5px;align-items:flex-start">
+            <div class="sidx">📁</div>
+            <div>
+              <h4>故障模板库</h4>
+              <p>已建模板 · 拖入画布或选择配置</p>
+            </div>
+          </div>
+          <button class="btn btn-model" style="font-size:8px;padding:3px 7px;flex-shrink:0" onclick="showView('modal')">＋ 新建</button>
+        </div>
+
+        <!-- 筛选 -->
+        <div class="cat-group" style="flex-shrink:0;margin-bottom:6px">
+          <div class="cat-pill active" style="font-size:8px;padding:2px 7px">全部</div>
+          <div class="cat-pill" style="font-size:8px;padding:2px 7px">模拟量</div>
+          <div class="cat-pill" style="font-size:8px;padding:2px 7px">状态量</div>
+          <div class="cat-pill" style="font-size:8px;padding:2px 7px">噪声</div>
+        </div>
+
+        <div class="tmpl-lib">
+          <div class="tmpl-item">
+            <div class="tmpl-drag">⠿</div>
+            <div style="flex:1;min-width:0">
+              <div class="tmpl-cat cat-noise">噪声干扰</div>
+              <strong>高斯噪声_方差5</strong>
+              <span>高斯噪声 · 均值0 方差5 严重度0.58</span>
+            </div>
+          </div>
+          <div class="tmpl-item">
+            <div class="tmpl-drag">⠿</div>
+            <div style="flex:1;min-width:0">
+              <div class="tmpl-cat cat-analog">模拟量故障</div>
+              <strong>偏差故障_+5</strong>
+              <span>偏差故障 · 固定偏差+5 严重度0.72</span>
+            </div>
+          </div>
+          <div class="tmpl-item">
+            <div class="tmpl-drag">⠿</div>
+            <div style="flex:1;min-width:0">
+              <div class="tmpl-cat cat-state">状态量故障</div>
+              <strong>状态突变_阻塞</strong>
+              <span>信号阻塞 · 严重度0.80</span>
+            </div>
+          </div>
+          <div class="tmpl-item" style="opacity:0.55">
+            <div class="tmpl-drag">⠿</div>
+            <div style="flex:1;min-width:0">
+              <div class="tmpl-cat cat-analog">模拟量故障</div>
+              <strong>渐变漂移_斜率0.2</strong>
+              <span>渐变故障 · 漂移斜率0.2</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 执行摘要 -->
+      <div class="card" style="flex-shrink:0">
+        <div class="ch">
+          <div>
+            <h4>实时执行摘要</h4>
+            <p>运行状态与关键指标</p>
+          </div>
+          <button class="btn btn-primary" style="font-size:9px;padding:3px 8px">进入执行</button>
+        </div>
+        <div class="exec-grid">
+          <div class="exec-box"><span>运行状态</span><div class="exec-status">就绪</div></div>
+          <div class="exec-box"><span>仿真时间</span><strong>0.0s</strong></div>
+          <div class="exec-box"><span>运行中任务</span><strong>0</strong></div>
+          <div class="exec-box"><span>恢复率</span><strong>88%</strong></div>
+        </div>
+        <div class="exec-btns">
+          <button class="btn btn-primary" style="flex:1;font-size:9px">开始</button>
+          <button class="btn" style="font-size:9px;padding:4px 8px">暂停</button>
+          <button class="btn" style="font-size:9px;padding:4px 8px">步进</button>
+          <button class="btn btn-danger" style="font-size:9px;padding:4px 8px">终止</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CENTER: Canvas ── -->
+    <div class="col">
+      <div class="canvas-shell" style="flex:1;min-height:0">
+
+        <!-- library sidebar -->
+        <div class="fault-lib">
+          <div class="fl-title">建模库</div>
+          <div class="fl-node fn">高斯噪声<div class="fl-sub">噪声干扰</div></div>
+          <div class="fl-node fn" style="opacity:0.6">偏差故障<div class="fl-sub">模拟量</div></div>
+          <div class="fl-node fn" style="opacity:0.5">状态突变<div class="fl-sub">状态量</div></div>
+          <hr style="border:none;border-top:1px solid rgba(188,212,247,0.5);margin:3px 0">
+          <div class="fl-title" style="margin-top:2px">组件</div>
+          <div class="fl-node fs">信号源<div class="fl-sub">SRC</div></div>
+          <div class="fl-node fs">流程块<div class="fl-sub">SYS</div></div>
+          <div class="fl-node fg">示波器<div class="fl-sub">SCOPE</div></div>
+        </div>
+
+        <!-- canvas -->
+        <div class="canvas-area">
+          <div class="canvas-tb">
+            <div style="display:flex;gap:4px">
+              <button class="btn" style="font-size:8px;padding:2px 6px">适配视图</button>
+              <button class="btn" style="font-size:8px;padding:2px 6px">删除选中</button>
+            </div>
+            <span class="canvas-hint">从左侧建模库拖入节点 · 从输出端口连线到输入端口 · Delete 删除</span>
+          </div>
+          <div class="canvas-body">
+            <svg class="canvas-svg" viewBox="0 0 440 250">
+              <defs>
+                <marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                  <path d="M2 1L8 5L2 9" fill="none" stroke="#90b6ff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </marker>
+              </defs>
+              <line x1="95" y1="130" x2="138" y2="100" stroke="#90b6ff" stroke-width="1.6" marker-end="url(#a2)"/>
+              <line x1="230" y1="100" x2="295" y2="130" stroke="#e07060" stroke-width="1.6" stroke-dasharray="4 2" marker-end="url(#a2)"/>
+              <line x1="95" y1="140" x2="138" y2="195" stroke="#90b6ff" stroke-width="1.5" marker-end="url(#a2)"/>
+              <line x1="190" y1="128" x2="190" y2="180" stroke="#e07060" stroke-width="1.4" stroke-dasharray="3 2" marker-end="url(#a2)"/>
+            </svg>
+            <div class="cn cn-src" style="left:25px;top:110px;width:70px">
+              <div class="cn-title">主信号源</div>
+              <div style="font-size:7px;color:#4a8060">SRC · 10/0/1</div>
+            </div>
+            <div class="cn cn-fault sel-ring" style="left:138px;top:62px;width:96px">
+              <div class="cn-title">高斯噪声_方差5</div>
+              <div style="font-size:7px;color:#a03020">噪声干扰 · FLT</div>
+              <div class="cn-badge">电气层 · 信号叠加</div>
+              <div style="font-size:7px;color:#c06040;margin-top:2px">11/0/1</div>
+            </div>
+            <div class="cn cn-sys" style="left:295px;top:110px;width:70px">
+              <div class="cn-title">流程块 A</div>
+              <div style="font-size:7px;color:#3060b0">SYS · 11/0/1</div>
+            </div>
+            <div class="cn cn-scope" style="left:138px;top:188px;width:96px">
+              <div class="cn-title">注入示波器</div>
+              <div style="font-size:7px;color:#7a40c0">SCOPE</div>
+            </div>
+            <div style="position:absolute;left:138px;top:46px;font-size:7px;color:#c84f20;background:rgba(255,235,228,0.95);padding:1px 5px;border-radius:4px;border:1px solid rgba(200,80,40,0.3)">已选中</div>
+          </div>
+        </div>
+
+        <!-- property inspector -->
+        <div class="prop-panel">
+          <div class="pp-title">属性栏</div>
+          <div class="ps"><div class="pl">节点名称</div><div class="pv" style="font-size:10px">高斯噪声_方差5</div></div>
+          <div class="ps"><div class="pl">故障模式（大类）</div><div class="pv">噪声干扰</div><div class="ptag tag-n">噪声干扰</div></div>
+          <div class="ps"><div class="pl">故障类型（细分）</div><div class="pv">高斯噪声</div><div class="psub">Gaussian Noise</div></div>
+          <div class="div-line"></div>
+          <div class="ps"><div class="pl">注入层级</div><div class="pv">电气层</div><div class="ptag tag-e">Electrical Layer</div></div>
+          <div class="ps"><div class="pl">注入方式</div><div class="pv" style="font-size:9px">信号叠加式注入</div><div class="ptag tag-ov">Signal Overlay</div></div>
+          <div class="ps"><div class="pl">作用位置</div><div class="pv" style="font-size:9px">传感器A · 电气层</div><div class="psub">主信号总线 / signal</div></div>
+          <div class="div-line"></div>
+          <div style="font-size:7px;font-weight:700;color:#4d6888;margin-bottom:2px">模板固有参数</div>
+          <div class="pp-grid">
+            <div class="pb"><div class="pbl">均值</div><div class="pbv">0.0</div></div>
+            <div class="pb"><div class="pbl">方差</div><div class="pbv">5.0</div></div>
+            <div class="pb"><div class="pbl">幅值</div><div class="pbv">12</div></div>
+            <div class="pb"><div class="pbl">严重度</div><div class="pbv">0.58</div></div>
+          </div>
+          <div style="font-size:7px;font-weight:700;color:#4d6888;margin:3px 0 2px">注入配置参数</div>
+          <div class="pp-grid">
+            <div class="pb"><div class="pbl">触发</div><div class="pbv">2.0s</div></div>
+            <div class="pb"><div class="pbl">持续</div><div class="pbv">98s</div></div>
+            <div class="pb"><div class="pbl">强度</div><div class="pbv">×1.7</div></div>
+            <div class="pb"><div class="pbl">系数</div><div class="pbv">0.85</div></div>
+          </div>
+          <button class="btn btn-danger" style="width:100%;margin-top:3px;font-size:8px">删除节点</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── RIGHT: 注入配置 + 任务列表 ── -->
+    <div class="col">
+
+      <div class="card" style="flex-shrink:0">
+        <div class="ch">
+          <div style="display:flex;gap:5px;align-items:flex-start">
+            <div class="sidx">02</div>
+            <div><h4>故障注入配置</h4><p>选模板 → 层级 → 方法 → 触发规则</p></div>
+          </div>
+          <button class="btn btn-primary" style="font-size:8px;padding:3px 6px;flex-shrink:0">加入任务</button>
+        </div>
+
+        <div style="font-size:8px;font-weight:700;color:#4d6888;margin-bottom:3px">① 从模板库选择</div>
+        <div class="field" style="margin-bottom:5px">
+          <select><option>高斯噪声_方差5</option><option>偏差故障_+5</option><option>状态突变_阻塞</option></select>
+        </div>
+        <div style="padding:4px 7px;border-radius:6px;background:rgba(245,249,255,0.9);font-size:8px;color:#6080a0;margin-bottom:7px">
+          噪声干扰 / 高斯噪声 · 均值0 方差5 严重度0.58
+        </div>
+
+        <div style="font-size:8px;font-weight:700;color:#4d6888;margin-bottom:3px">② 注入层级</div>
+        <div class="layer-group">
+          <div class="lb">物理层</div>
+          <div class="lb le">电气层</div>
+          <div class="lb">协议层</div>
+        </div>
+        <div class="method-card">
+          <div class="mc-l">自动绑定注入方法</div>
+          <div class="mc-v">信号叠加式注入</div>
+          <div class="mc-h">电气层→信号叠加 · 叠加相位、时长可微调</div>
+        </div>
+
+        <div style="font-size:8px;font-weight:700;color:#4d6888;margin-bottom:3px">③ 注入位置</div>
+        <div class="fg2" style="margin-bottom:5px">
+          <div class="field"><label>目标节点/链路</label><select><option>传感器A · 电气层</option><option>主信号总线</option></select></div>
+          <div class="field"><label>信号通道</label><select><option>signal</option><option>in1</option></select></div>
+        </div>
+
+        <div style="font-size:8px;font-weight:700;color:#4d6888;margin-bottom:3px">④ 触发规则</div>
+        <div class="fg2">
+          <div class="field"><label>触发时间 (s)</label><input value="2.0"/></div>
+          <div class="field"><label>持续时长 (s)</label><input value="98"/></div>
+          <div class="field"><label>强度系数</label><input value="1.7"/></div>
+          <div class="field"><label>触发条件</label><select><option>立即触发</option><option>事件触发</option></select></div>
+        </div>
+      </div>
+
+      <!-- 任务列表 -->
+      <div class="card" style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;flex-shrink:0">
+          <div style="font-size:10px;font-weight:500;color:#2d4e78">已配置注入任务 <span style="font-size:8px;color:#8aa3bf;font-weight:400">共 2 个</span></div>
+          <div style="display:flex;gap:3px">
+            <button class="btn" style="font-size:8px;padding:2px 6px">批量部署</button>
+            <button class="btn btn-danger" style="font-size:8px;padding:2px 6px">清空</button>
+          </div>
+        </div>
+        <div class="task-list">
+          <div class="ti">
+            <div class="ti-head"><strong>高斯噪声_方差5 · 电气层任务</strong><div class="ts ts-dep">已部署</div></div>
+            <span>传感器A · 电气层 / signal · 触发 2s · 持续 98s · 强度×1.7</span>
+            <div class="ti-method tm-e">⚡ 信号叠加式注入</div>
+          </div>
+          <div class="ti">
+            <div class="ti-head"><strong>偏差故障_+5 · 物理层任务</strong><div class="ts ts-wait">待部署</div></div>
+            <span>温度传感器B · 物理层 / temp · 触发 5s · 持续 60s · 强度×1.0</span>
+            <div class="ti-method tm-p">🔧 物理参数修改注入</div>
+          </div>
+        </div>
+        <div class="layer-legend" style="flex-shrink:0">
+          <div style="font-size:7px;font-weight:700;color:#4d6888;margin-bottom:4px">注入方式说明</div>
+          <div class="ll-row"><div class="ll-dot" style="background:rgba(62,183,127,0.3)"></div><span style="color:#1a6040;font-weight:700">物理层</span><span style="color:#8aa3bf;margin-left:2px">→ 物理参数修改式注入</span></div>
+          <div class="ll-row"><div class="ll-dot" style="background:rgba(47,128,255,0.2)"></div><span style="color:#1050c0;font-weight:700">电气层</span><span style="color:#8aa3bf;margin-left:2px">→ 信号叠加式注入</span></div>
+          <div class="ll-row"><div class="ll-dot" style="background:rgba(160,90,220,0.15)"></div><span style="color:#6020a0;font-weight:700">协议层</span><span style="color:#8aa3bf;margin-left:2px">→ 通信链路数据篡改注入</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- main -->
+
+  <!-- ── MODAL: 故障模式建模 ── -->
+  <div class="modal-overlay" id="modal-overlay" style="display:none">
+    <div class="modal">
+      <div class="modal-hdr">
+        <div>
+          <h3>故障模式建模</h3>
+          <p>独立建模窗口 · 定义故障模板本身（不涉及注入位置和方式）· 保存后进入模板库</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="font-size:9px;color:#8aa3bf">已建 3 个模板</div>
+          <button class="modal-close" onclick="showView('main')">✕</button>
+        </div>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- STEP 1: 选择大类 + 细分 -->
+        <div class="modal-step">
+          <div class="step-label">
+            <div class="step-num">01</div>
+            <div class="step-title">选择故障大类与细分类型</div>
+          </div>
+          <div class="step-desc">先确定故障大类（模拟量 / 状态量 / 噪声干扰），再选细分模式，参数区自动联动。</div>
+
+          <div style="font-size:8px;font-weight:700;color:#4d6888;margin-bottom:3px">故障大类</div>
+          <div class="cat-group">
+            <div class="cat-pill" style="font-size:8px;padding:3px 8px">模拟量故障</div>
+            <div class="cat-pill" style="font-size:8px;padding:3px 8px">状态量故障</div>
+            <div class="cat-pill active" style="font-size:8px;padding:3px 8px">噪声干扰</div>
+          </div>
+
+          <div style="font-size:8px;font-weight:700;color:#4d6888;margin-bottom:3px">细分类型</div>
+          <div class="type-grid">
+            <div class="type-tile active"><strong>高斯噪声</strong><span>均值/方差控制随机波动</span></div>
+            <div class="type-tile"><strong>脉冲噪声</strong><span>幅值·触发阈值·偶发尖峰</span></div>
+            <div class="type-tile"><strong>白噪声</strong><span>宽频均匀分布干扰</span></div>
+            <div class="type-tile"><strong>有色噪声</strong><span>带频率特征的持续干扰</span></div>
+          </div>
+
+          <div style="padding:7px 8px;border-radius:8px;background:rgba(47,128,255,0.06);border:1px solid rgba(47,128,255,0.18);font-size:8px;color:#3060a0;line-height:1.5">
+            <strong style="display:block;margin-bottom:2px;color:#1a4080">高斯噪声说明</strong>
+            适合电气层信号叠加注入。重点关注均值、方差和严重度对波形起伏的影响，幅值控制单次波动上限。
+          </div>
+        </div>
+
+        <!-- STEP 2: 参数配置 + 预览 -->
+        <div class="modal-step">
+          <div class="step-label">
+            <div class="step-num">02</div>
+            <div class="step-title">配置固有参数</div>
+          </div>
+          <div class="step-desc">只配置与故障本体相关的参数；注入位置和触发规则在主界面配置。</div>
+
+          <div class="param-row">
+            <div class="param-copy"><strong>均值</strong><span>控制噪声中心偏移 · 单位 V/℃/rpm</span></div>
+            <input class="param-input" value="0.0"/>
+          </div>
+          <div class="param-row">
+            <div class="param-copy"><strong>方差</strong><span>决定波动离散程度，越大起伏越明显</span></div>
+            <input class="param-input" value="5.0"/>
+          </div>
+          <div class="param-row">
+            <div class="param-copy"><strong>噪声幅值</strong><span>控制单次波动上限幅度</span></div>
+            <input class="param-input" value="12"/>
+          </div>
+          <div class="param-row">
+            <div class="param-copy"><strong>基础严重度</strong><span>0.1–1.2 · 后续在配置中可放大/缩小</span></div>
+            <input class="param-input" value="0.58"/>
+          </div>
+
+          <div style="font-size:8px;font-weight:700;color:#4d6888;margin-bottom:3px">效果预览</div>
+          <div class="chart-ph">
+            <svg viewBox="0 0 300 52" preserveAspectRatio="none">
+              <polyline fill="none" stroke="rgba(180,200,230,0.7)" stroke-width="1.2" points="0,26 30,26 60,26 90,26 120,26 150,26 180,26 210,26 240,26 270,26 300,26"/>
+              <polyline fill="none" stroke="#2f80ff" stroke-width="1.5" points="0,26 12,18 24,33 36,21 48,30 60,14 72,35 84,20 96,31 108,16 120,34 132,22 144,29 156,15 168,33 180,21 192,29 204,18 216,34 228,23 240,27 252,16 264,32 276,24 288,27 300,26"/>
+            </svg>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:4px;font-size:7px;color:#8aa3bf;align-items:center">
+            <span style="display:flex;align-items:center;gap:2px"><span style="display:inline-block;width:10px;height:1.5px;background:rgba(180,200,230,0.9)"></span>理想信号</span>
+            <span style="display:flex;align-items:center;gap:2px"><span style="display:inline-block;width:10px;height:1.5px;background:#2f80ff"></span>扰动后</span>
+          </div>
+        </div>
+
+        <!-- STEP 3: 命名 + 已建模板 -->
+        <div class="modal-step">
+          <div class="step-label">
+            <div class="step-num">03</div>
+            <div class="step-title">命名并保存到模板库</div>
+          </div>
+          <div class="step-desc">保存后模板进入主界面左侧的模板库，可拖拽至画布并在配置面板中使用。</div>
+
+          <div class="field">
+            <label style="font-size:8px">模板名称</label>
+            <input value="高斯噪声_方差5" style="font-size:10px"/>
+          </div>
+          <div style="font-size:7px;color:#8aa3bf;margin-bottom:8px;line-height:1.5">命名建议：故障类型 + 关键参数，如"高斯噪声_方差5"或"偏差故障_+18"</div>
+
+          <div style="display:flex;gap:5px;margin-bottom:10px">
+            <button class="btn" style="flex:1;font-size:9px">新建草稿</button>
+            <button class="btn btn-primary" style="flex:1;font-size:9px">保存到模板库 →</button>
+          </div>
+
+          <div style="font-size:8px;font-weight:700;color:#4d6888;margin-bottom:4px">已建模板（共 3 个）</div>
+          <div class="tmpl-saved">
+            <div class="tmpl-cat cat-noise" style="margin-bottom:2px">噪声干扰</div>
+            <strong>高斯噪声_方差5</strong>
+            <span>高斯噪声 · 均值0 方差5 严重度0.58</span>
+          </div>
+          <div class="tmpl-saved">
+            <div class="tmpl-cat cat-analog" style="margin-bottom:2px">模拟量故障</div>
+            <strong>偏差故障_+5</strong>
+            <span>偏差故障 · 固定偏差+5 严重度0.72</span>
+          </div>
+          <div class="tmpl-saved">
+            <div class="tmpl-cat cat-state" style="margin-bottom:2px">状态量故障</div>
+            <strong>状态突变_阻塞</strong>
+            <span>信号阻塞 · 严重度0.80</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <p>建模完成后关闭此窗口，返回主界面进行注入配置与执行</p>
+        <div style="display:flex;gap:6px">
+          <button class="btn" onclick="showView('main')">关闭返回主界面</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- platform -->
+
+<script>
+function showView(v) {
+  var overlay = document.getElementById('modal-overlay');
+  var btns = document.querySelectorAll('.vt-btn');
+  if(v === 'modal') {
+    overlay.style.display = 'flex';
+    btns[0].classList.remove('active');
+    btns[1].classList.add('active');
+  } else {
+    overlay.style.display = 'none';
+    btns[1].classList.remove('active');
+    btns[0].classList.add('active');
+  }
+}
+</script>

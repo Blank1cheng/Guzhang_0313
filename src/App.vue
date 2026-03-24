@@ -14,12 +14,7 @@
           <span class="top-brand__kicker">EXP_0312</span>
           <div class="top-brand__copy">
             <h1>故障注入平台</h1>
-            <small>模板建模 / 注入配置 / 执行监控 / 结果分析</small>
-          </div>
-          <div class="top-brand__meta">
-            <span class="header-status" :class="`header-status--${runtime.status}`">{{ runtimeStatusText }}</span>
-            <span class="header-meta">仿真 {{ runtime.simTime.toFixed(1) }}s</span>
-            <span class="header-meta">已部署 {{ deployedTaskCount }}</span>
+            <small>围绕多信号传播建模、故障建模、故障配置、仿真执行与结果分析的轻量工作台。</small>
           </div>
         </div>
 
@@ -39,15 +34,18 @@
         </div>
 
         <div class="top-action-row">
-          <div class="header-action-group">
-            <a-button class="header-action" @click="openWorkspaceImport">导入</a-button>
-            <a-button class="header-action" @click="handleExportWorkspace">导出</a-button>
+          <div class="top-brand__meta top-brand__meta--compact">
+            <span class="header-status" :class="`header-status--${runtime.status}`">{{ runtimeStatusText }}</span>
+            <span class="header-meta">仿真 {{ runtime.simTime.toFixed(1) }}s</span>
+            <span class="header-meta">节点 {{ canvasCounts.nodes }}</span>
+            <span class="header-meta">任务 {{ injectionTasks.length }}</span>
           </div>
-          <div class="header-action-group header-action-group--primary">
-            <a-button class="header-action header-action--primary" @click="openModelingModal(templateDraft.id || taskDraft.templateId)">模板建模</a-button>
-            <a-button class="header-action header-action--accent" :disabled="!taskRows.length" @click="handleDeployAllTasks">部署任务</a-button>
-            <a-button class="header-action header-action--warning" :disabled="!taskRows.length || runtime.status === 'running'" @click="handleClearTasks">清空画布</a-button>
-            <a-button class="header-action header-action--danger" danger @click="handleResetWorkspace">重置</a-button>
+          <div class="header-action-group header-action-group--compact">
+            <a-button class="header-action header-action--primary" :disabled="!runtimeControls.canStart" @click="handleRuntimeStart">开始</a-button>
+            <a-button class="header-action" :disabled="!runtimeControls.canPause" @click="handleRuntimePause">暂停</a-button>
+            <a-button class="header-action" :disabled="!runtimeControls.canStep" @click="handleRuntimeStep">单步</a-button>
+            <a-button class="header-action header-action--danger" :disabled="!runtimeControls.canStop" danger @click="handleRuntimeStop">停止</a-button>
+            <a-button class="header-action" :disabled="runtime.status === 'running'" @click="handleResetWorkspace">重置</a-button>
           </div>
         </div>
       </div>
@@ -55,19 +53,37 @@
 
     <template v-if="activeView === 'overview'">
       <section class="overview-shell">
+        <article class="panel-card workflow-board workflow-board--linear">
+          <div class="workflow-board__steps workflow-board__steps--linear">
+            <article
+              v-for="item in workflowSteps"
+              :key="item.key"
+              class="workflow-arrow"
+              :class="`workflow-arrow--${item.state}`"
+            >
+              <span class="workflow-arrow__index">{{ Number(item.index) }}</span>
+              <span class="workflow-arrow__label">{{ item.label }}</span>
+              <small class="workflow-arrow__hint">{{ item.hint }}</small>
+            </article>
+          </div>
+        </article>
+
         <div class="overview-layout">
           <aside class="panel-card library-panel library-panel--sidebar">
             <div class="library-panel__head">
               <div class="panel-section-head panel-section-head--compact">
                 <div class="section-badge">01</div>
                 <div>
-                  <h3>模板库</h3>
-                  <p>左侧常驻浏览，展开后可获得更完整的拖拽视图。</p>
+                  <h3>故障建模库</h3>
+                  <p>左侧常驻画布，直接拖拽模板与基础模块，构建故障注入流程。</p>
                 </div>
               </div>
               <div class="library-panel__head-actions">
                 <span class="panel-head-pill">{{ activeLibraryCount }} 项</span>
-                <a-button size="small" @click="openLibraryDrawer">展开模块库</a-button>
+                <div class="library-panel__head-buttons">
+                  <a-button size="small" class="header-action--modeling" @click="handleOpenModelingEntry">新建</a-button>
+                  <a-button size="small" @click="toggleLibraryCatalog()">{{ libraryCatalogCollapsed ? '展开' : '收起' }}</a-button>
+                </div>
               </div>
             </div>
 
@@ -135,7 +151,7 @@
               </template>
             </div>
 
-            <div class="library-browser-shell library-browser-shell--sidebar">
+            <div v-show="!libraryCatalogCollapsed" class="library-browser-shell library-browser-shell--sidebar">
               <div v-if="activeLibraryPane === 'faults'" class="library-browser-scroll">
                 <div class="field-inline field-inline--stack">
                   <span class="field-label">模板分类</span>
@@ -230,11 +246,38 @@
               </div>
             </div>
 
-            <div class="library-actions library-actions--sidebar">
-              <a-button @click="openLibraryDrawer">完整展开</a-button>
-              <a-button type="primary" ghost @click="openModelingModal(templateDraft.id)">编辑当前模板</a-button>
-              <a-button type="primary" @click="handleSaveTemplate">保存当前模板</a-button>
-            </div>
+            <article class="library-runtime-card">
+              <div class="panel-mini-head panel-mini-head--browser">
+                <strong>执行摘要</strong>
+                <a-button size="small" @click="activeView = 'execution'">进入仿真</a-button>
+              </div>
+
+              <div class="library-runtime-grid">
+                <div class="library-runtime-box">
+                  <span>状态</span>
+                  <strong>{{ runtimeStatusText }}</strong>
+                </div>
+                <div class="library-runtime-box">
+                  <span>时间</span>
+                  <strong>{{ runtime.simTime.toFixed(1) }}s</strong>
+                </div>
+                <div class="library-runtime-box">
+                  <span>已部署</span>
+                  <strong>{{ deployedTaskCount }}</strong>
+                </div>
+                <div class="library-runtime-box">
+                  <span>恢复率</span>
+                  <strong>{{ recoveryRateText }}</strong>
+                </div>
+              </div>
+
+              <div class="library-runtime-actions">
+                <a-button size="small" type="primary" :disabled="!runtimeControls.canStart" @click="handleRuntimeStart">开始</a-button>
+                <a-button size="small" :disabled="!runtimeControls.canPause" @click="handleRuntimePause">暂停</a-button>
+                <a-button size="small" :disabled="!runtimeControls.canStep" @click="handleRuntimeStep">步进</a-button>
+                <a-button size="small" danger ghost :disabled="!runtimeControls.canStop" @click="handleRuntimeStop">终止</a-button>
+              </div>
+            </article>
           </aside>
 
           <transition name="library-drawer">
@@ -443,19 +486,10 @@
               <div class="tool-group">
                 <span class="tool-group__label">画布</span>
                 <div class="action-group">
-                  <a-button size="small" @click="fitCanvasView">适配</a-button>
+                  <a-button size="small" @click="fitCanvasView">适配视图</a-button>
                   <a-button size="small" @click="deleteCanvasSelection">删除</a-button>
-                  <a-button size="small" @click="openLibraryDrawer">模块库</a-button>
-                  <a-button size="small" type="primary" ghost @click="openTaskDrawer">配置</a-button>
-                </div>
-              </div>
-              <div class="tool-group tool-group--runtime">
-                <span class="tool-group__label">执行</span>
-                <div class="action-group action-group--runtime">
-                  <a-button size="small" type="primary" :disabled="!runtimeControls.canStart" @click="handleRuntimeStart">开始</a-button>
-                  <a-button size="small" :disabled="!runtimeControls.canPause" @click="handleRuntimePause">暂停</a-button>
-                  <a-button size="small" :disabled="!runtimeControls.canStep" @click="handleRuntimeStep">单步</a-button>
-                  <a-button size="small" danger ghost :disabled="!runtimeControls.canStop" @click="handleRuntimeStop">终止</a-button>
+                  <a-button size="small" @click="openLibraryDrawer">展开库</a-button>
+                  <a-button size="small" type="primary" ghost @click="openTaskDrawer">配置子页</a-button>
                 </div>
               </div>
             </div>
@@ -466,8 +500,9 @@
               <div class="section-badge">02</div>
               <div>
                 <h3>注入配置</h3>
-                <p>配置目标、方法和时序。</p>
+                <p>常驻右栏用于快速配置，复杂任务可进入完整配置子页。</p>
               </div>
+              <a-button size="small" @click="openTaskDrawer">进入子页</a-button>
             </div>
 
             <div class="config-panel__grid">
@@ -477,28 +512,16 @@
                 <small>{{ selectedTemplateMeta.summary }}</small>
               </div>
 
-              <div class="config-identity-strip">
-                <div class="config-identity-card">
-                  <span>模板本体</span>
-                  <strong>{{ selectedTemplateMeta.mode }}</strong>
-                  <small>建模页定义故障核心参数</small>
-                </div>
-                <div class="config-identity-card">
-                  <span>注入层级</span>
-                  <strong>{{ layerLabel(taskDraft.layer) }}</strong>
-                  <small>决定作用位置与可用方法</small>
-                </div>
-                <div class="config-identity-card">
-                  <span>注入方式</span>
-                  <strong>{{ currentMethodLabel }}</strong>
-                  <small>配置时序、通道与强度系数</small>
-                </div>
+              <div class="config-method-banner">
+                <span>当前注入方式</span>
+                <strong>{{ currentMethodLabel }}</strong>
+                <small>{{ currentMethodMeta?.hint || '按当前层级自动匹配注入方式。' }}</small>
               </div>
 
               <div class="config-section">
                 <div class="config-section__head">
                   <strong>注入目标</strong>
-                  <span>先定层级，再绑定位置。</span>
+                  <span>先定层级，再绑定节点位置与通道。</span>
                 </div>
 
                 <div class="config-section__grid">
@@ -533,39 +556,16 @@
 
               <div class="config-section">
                 <div class="config-section__head">
-                  <strong>注入方法</strong>
-                  <span>决定故障施加方式。</span>
+                  <strong>时序规则</strong>
+                  <span>控制触发时间、持续长度与强度放大。</span>
                 </div>
 
                 <div class="config-section__grid">
-                  <div class="param-field config-section__field--full">
-                    <span>注入方法</span>
-                    <a-select v-model:value="taskDraft.method">
-                      <a-select-option v-for="item in currentTaskMethodOptions" :key="item.value" :value="item.value">
-                        {{ item.label }}
-                      </a-select-option>
-                    </a-select>
-                  </div>
-
                   <div class="param-field">
                     <span>{{ currentMethodMeta?.factorLabel || '方法系数' }}</span>
                     <a-input-number v-model:value="taskDraft.methodFactor" :step="0.05" :min="0.1" style="width: 100%" />
                   </div>
 
-                  <div class="param-field param-field--readonly config-section__field--full">
-                    <span>方法说明</span>
-                    <strong>{{ currentMethodMeta?.hint || '按层级自动绑定可用注入方式。' }}</strong>
-                  </div>
-                </div>
-              </div>
-
-              <div class="config-section">
-                <div class="config-section__head">
-                  <strong>时序规则</strong>
-                  <span>设置窗口和触发条件。</span>
-                </div>
-
-                <div class="config-section__grid">
                   <div class="param-field">
                     <span>触发时间</span>
                     <a-input-number v-model:value="taskDraft.triggerStart" :step="0.5" :min="0" style="width: 100%" />
@@ -591,139 +591,229 @@
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div class="config-tip">
-              <span>当前模板</span>
-              <strong>{{ taskDraft.templateName }}</strong>
-              <small>{{ layerLabel(taskDraft.layer) }} / {{ currentMethodLabel }}</small>
-            </div>
+              <div class="config-tip">
+                <span>当前模板</span>
+                <strong>{{ taskDraft.templateName || '未选择模板' }}</strong>
+                <small>{{ layerLabel(taskDraft.layer) }} / {{ currentMethodLabel }}</small>
+              </div>
 
-            <div class="config-panel__actions">
-              <a-button type="primary" @click="handleCreateTask">加入任务</a-button>
-              <a-button :disabled="!taskRows.length || runtime.status === 'running'" @click="handleDeployAllTasks">批量部署</a-button>
-              <a-button @click="openTaskDrawer">更多配置</a-button>
-            </div>
-
-            <div class="config-divider"></div>
-
-            <div class="panel-section-head panel-section-head--compact panel-section-head--sub">
-              <div class="section-badge">03</div>
-              <div>
-                <h3>节点属性</h3>
+              <div class="config-panel__actions">
+                <a-button type="primary" @click="handleCreateTask">加入任务</a-button>
+                <a-button :disabled="!taskRows.length || runtime.status === 'running'" @click="handleDeployAllTasks">批量部署</a-button>
+                <a-button @click="openTaskDrawer">完整配置</a-button>
               </div>
             </div>
 
-            <div v-if="selectedFaultNode" class="property-stack">
-              <div class="property-title">{{ selectedFaultNode.name }}</div>
-
-              <div class="property-field">
-                <label>故障模式</label>
-                <strong>{{ categoryLabel(selectedFaultNode.category) }}</strong>
+            <section class="config-task-board">
+              <div class="panel-mini-head panel-mini-head--browser">
+                <strong>任务列表</strong>
+                <span>{{ taskRows.length }} 项</span>
               </div>
 
-              <div class="property-field">
-                <label>故障类型</label>
-                <strong>{{ modeLabel(selectedFaultNode.mode) }}</strong>
+              <div v-if="taskRows.length" class="overview-task-list overview-task-list--scroll">
+                <article v-for="task in taskRows" :key="task.id" class="overview-task-item overview-task-item--board">
+                  <div class="overview-task-item__main">
+                    <strong>{{ task.name }}</strong>
+                    <small>{{ task.location }} / {{ task.channel }}</small>
+                    <small>{{ task.triggerStart }}s - {{ task.endTime }}s · {{ task.methodLabel || task.method }}</small>
+                  </div>
+                  <div class="overview-task-item__meta">
+                    <span class="deploy-pill" :class="task.deployedNodeId ? 'deploy-pill--done' : 'deploy-pill--ready'">
+                      {{ task.deployedNodeId ? '已部署' : '待部署' }}
+                    </span>
+                    <a-button size="small" type="primary" ghost @click="handleDeployTask(task.id)">部署</a-button>
+                    <a-button size="small" danger @click="handleRemoveTask(task.id)">删除</a-button>
+                  </div>
+                </article>
+              </div>
+              <div v-else class="empty-card empty-card--compact">当前还没有配置任务，先从模板创建任务再部署到画布。</div>
+
+              <details class="task-legend">
+                <summary>注入层级说明</summary>
+                <div class="task-legend__list">
+                  <div class="task-legend__item"><span class="task-legend__swatch task-legend__swatch--physical"></span><small>物理层：参数修改式注入</small></div>
+                  <div class="task-legend__item"><span class="task-legend__swatch task-legend__swatch--electrical"></span><small>电气层：信号叠加式注入</small></div>
+                  <div class="task-legend__item"><span class="task-legend__swatch task-legend__swatch--protocol"></span><small>协议层：链路数据篡改式注入</small></div>
+                </div>
+              </details>
+            </section>
+
+            <section class="config-property-card">
+              <div class="panel-mini-head panel-mini-head--browser">
+                <strong>节点属性</strong>
+                <a-button size="small" :disabled="!selectedFaultNode" @click="propertyDrawerOpen = true">详细</a-button>
               </div>
 
-              <div class="property-field">
-                <label>作用位置</label>
-                <strong>{{ `${selectedFaultNode.location} / ${layerLabel(selectedFaultNode.injectionLayer)}` }}</strong>
+              <div v-if="selectedFaultNode" class="config-property-grid">
+                <div class="property-field">
+                  <label>节点名称</label>
+                  <strong>{{ selectedFaultNode.name }}</strong>
+                </div>
+                <div class="property-field">
+                  <label>故障模式</label>
+                  <strong>{{ categoryLabel(selectedFaultNode.category) }}</strong>
+                </div>
+                <div class="property-field">
+                  <label>故障类型</label>
+                  <strong>{{ modeLabel(selectedFaultNode.mode) }}</strong>
+                </div>
+                <div class="property-field">
+                  <label>作用位置</label>
+                  <strong>{{ `${selectedFaultNode.location} / ${layerLabel(selectedFaultNode.injectionLayer)}` }}</strong>
+                </div>
               </div>
-
-              <div class="property-field">
-                <label>注入方式</label>
-                <strong>{{ injectionMethodLabel(selectedFaultNode.injectionMethod) }}</strong>
+              <div v-else class="property-empty">
+                <strong>未选中故障节点</strong>
+                <p>选中画布中的故障节点后，在这里查看摘要并进入详细编辑。</p>
               </div>
-
-              <div class="property-metric-strip">
-                <div class="property-metric"><span>触发</span><strong>{{ selectedFaultNode.triggerStart }}s</strong></div>
-                <div class="property-metric"><span>持续</span><strong>{{ selectedFaultNode.duration }}s</strong></div>
-                <div class="property-metric"><span>强度</span><strong>{{ selectedFaultNode.intensity }}</strong></div>
-                <div class="property-metric"><span>系数</span><strong>{{ selectedFaultNode.methodFactor }}</strong></div>
-              </div>
-
-              <a-button type="primary" ghost @click="propertyDrawerOpen = true">详细编辑</a-button>
-            </div>
-
-            <div v-else class="property-empty">
-              <strong>未选中故障节点</strong>
-              <p>选中故障节点后查看属性。</p>
-            </div>
+            </section>
           </aside>
 
-          <article class="panel-card canvas-panel canvas-panel--main">
-            <div class="canvas-stage">
-              <div class="canvas-stage__head">
-                <div>
-                  <strong>系统总布图</strong>
-                  <small>{{ selectedFaultNode ? '已选节点，可在右侧查看属性。' : '拖入模块、连线、部署。' }}</small>
-                </div>
-                <div class="canvas-stage__status">
-                  <span class="stage-chip">预设 {{ scenarioPresetOptions.find((item) => item.value === activePresetId)?.label || '基础流程' }}</span>
-                  <span class="stage-chip">窗口 {{ taskWindowText }}</span>
-                  <span class="stage-chip">目标 {{ selectedTargetText }}</span>
-                </div>
-              </div>
+          <article class="panel-card canvas-panel canvas-panel--main canvas-panel--focus">
+            <div class="workspace-shell">
+              <aside class="workspace-rail">
+                <button type="button" class="workspace-rail__button" @click="openLibraryDrawer">
+                  <span class="workspace-rail__token">LIB</span>
+                  <span>模块库</span>
+                </button>
+                <button
+                  type="button"
+                  class="workspace-rail__button"
+                  :disabled="!hasSystemModel"
+                  @click="handleOpenModelingEntry"
+                >
+                  <span class="workspace-rail__token">MOD</span>
+                  <span>故障建模</span>
+                </button>
+                <button
+                  type="button"
+                  class="workspace-rail__button"
+                  :disabled="!hasSystemModel"
+                  @click="handleOpenConfigEntry"
+                >
+                  <span class="workspace-rail__token">CFG</span>
+                  <span>故障配置</span>
+                </button>
+                <button
+                  type="button"
+                  class="workspace-rail__button"
+                  :disabled="!selectedNode && !selectedEdge"
+                  @click="propertyDrawerOpen = true"
+                >
+                  <span class="workspace-rail__token">ATR</span>
+                  <span>属性</span>
+                </button>
+                <button
+                  type="button"
+                  class="workspace-rail__button"
+                  @click="scopeModalOpen = true"
+                >
+                  <span class="workspace-rail__token">SCP</span>
+                  <span>示波器</span>
+                </button>
+              </aside>
 
-              <div
-                class="canvas-stage__surface"
-                :class="{
-                  'canvas-stage__surface--empty': canvasGuide?.mode === 'empty',
-                  'canvas-stage__surface--dragging': canvasGuide?.mode === 'dragging',
-                  'canvas-stage__surface--placed': canvasGuide?.mode === 'placed',
-                }"
-              >
-                <div class="canvas-stage__toolbar">
-                  <button type="button" class="canvas-mini-button" @click="fitCanvasView">适</button>
-                  <button type="button" class="canvas-mini-button" @click="deleteCanvasSelection">删</button>
-                </div>
-
-                <div v-if="canvasGuideLanes.length" class="canvas-lane-strip">
-                  <div
-                    v-for="lane in canvasGuideLanes"
-                    :key="lane.key"
-                    class="canvas-lane-chip"
-                    :class="{ 'canvas-lane-chip--active': lane.active }"
-                  >
-                    <strong>{{ lane.label }}</strong>
-                    <span>{{ lane.hint }}</span>
+              <div class="canvas-stage canvas-stage--focus">
+                <div class="canvas-stage__head">
+                  <div>
+                    <strong>{{ hasSystemModel ? '多信号传播建模画布' : '请导入模型完成建模' }}</strong>
+                    <small>{{ hasSystemModel ? workflowHeadline : '导入系统模型后，在画布上完成链路搭建、故障挂接和示波器配置。' }}</small>
+                  </div>
+                  <div class="canvas-stage__head-actions">
+                    <a-button size="small" @click="openWorkspaceImport">导入</a-button>
+                    <a-button size="small" :disabled="!hasSystemModel" @click="handleExportWorkspace">导出</a-button>
+                    <a-button size="small" class="header-action--modeling" :disabled="!hasSystemModel" @click="handleOpenModelingEntry">故障建模</a-button>
+                    <a-button size="small" type="primary" ghost :disabled="!hasSystemModel" @click="handleOpenConfigEntry">故障配置</a-button>
                   </div>
                 </div>
 
-                <div v-if="canvasGuide" class="canvas-empty-guide" :class="`canvas-empty-guide--${canvasGuide.mode}`">
-                  <span class="canvas-empty-guide__token">{{ canvasGuide.token }}</span>
-                  <strong>{{ canvasGuide.title }}</strong>
-                  <p>{{ canvasGuide.text }}</p>
-                  <div v-if="canvasGuide.mode === 'empty'" class="canvas-empty-guide__actions">
-                    <a-button size="small" type="primary" @click="handleApplyPreset('baseline')">应用基础预设</a-button>
-                    <a-button size="small" @click="openLibraryDrawer">打开模块库</a-button>
+                <div class="canvas-stage__status canvas-stage__status--focus">
+                  <div class="canvas-stage__status-main">
+                    <span class="stage-chip">预设 {{ scenarioPresetOptions.find((item) => item.value === activePresetId)?.label || '基础流程' }}</span>
+                    <span class="stage-chip">窗口 {{ taskWindowText }}</span>
+                    <span class="stage-chip">目标 {{ selectedTargetText }}</span>
+                    <span class="stage-chip">任务 {{ injectionTasks.length }}</span>
+                  </div>
+                  <span class="canvas-stage__status-note">旧的建模页、配置窗和属性窗继续保留，从画布周边入口直接调起。</span>
+                </div>
+
+                <div
+                  class="canvas-stage__surface"
+                  :class="{
+                    'canvas-stage__surface--empty': canvasGuide?.mode === 'empty',
+                    'canvas-stage__surface--dragging': canvasGuide?.mode === 'dragging',
+                    'canvas-stage__surface--placed': canvasGuide?.mode === 'placed',
+                  }"
+                >
+                  <div class="canvas-stage__toolbar">
+                    <button type="button" class="canvas-mini-button" aria-label="适配视图" title="适配视图" @click="fitCanvasView">适配</button>
+                    <button type="button" class="canvas-mini-button" aria-label="删除选中" title="删除选中" @click="deleteCanvasSelection">删除</button>
+                    <button type="button" class="canvas-mini-button" aria-label="查看属性" title="查看属性" @click="propertyDrawerOpen = true">属性</button>
+                    <button type="button" class="canvas-mini-button" aria-label="查看示波器波形" title="查看示波器波形" @click="scopeModalOpen = true">示波</button>
+                  </div>
+
+                  <div v-if="canvasGuide" class="canvas-empty-guide" :class="`canvas-empty-guide--${canvasGuide.mode}`">
+                    <span class="canvas-empty-guide__token">{{ hasSystemModel ? canvasGuide.token : '01' }}</span>
+                    <strong>{{ hasSystemModel ? canvasGuide.title : '请导入模型完成建模' }}</strong>
+                    <p>{{ hasSystemModel ? canvasGuide.text : '完成多信号传播模型导入后，再进入故障建模、故障配置和仿真执行。' }}</p>
+                    <div v-if="canvasGuide.mode === 'empty'" class="canvas-empty-guide__actions">
+                      <a-button size="small" type="primary" @click="openWorkspaceImport">导入模型</a-button>
+                      <a-button size="small" @click="handleApplyPreset('baseline')">加载示例</a-button>
+                      <a-button size="small" :disabled="!hasSystemModel" @click="handleOpenModelingEntry">故障建模</a-button>
+                    </div>
+                  </div>
+
+                  <WorkbenchCanvas
+                    ref="canvasRef"
+                    :initial-graph="{ nodes: graphNodes, edges: graphEdges }"
+                    @graph-change="syncGraph"
+                    @selection-change="setSelectedElement"
+                    @element-deleted="handleCanvasElementDeleted"
+                    @node-added="handleCanvasNodeAdded"
+                  />
+
+                  <div v-if="selectedFaultNode" class="canvas-property-float">
+                    <div class="canvas-property-float__head">
+                      <strong>{{ selectedFaultNode.name }}</strong>
+                      <a-button size="small" @click="propertyDrawerOpen = true">详细</a-button>
+                    </div>
+                    <div class="canvas-property-float__grid">
+                      <span>模式</span>
+                      <strong>{{ categoryLabel(selectedFaultNode.category) }}</strong>
+                      <span>类型</span>
+                      <strong>{{ modeLabel(selectedFaultNode.mode) }}</strong>
+                      <span>位置</span>
+                      <strong>{{ selectedFaultNode.location }}</strong>
+                      <span>层级</span>
+                      <strong>{{ layerLabel(selectedFaultNode.injectionLayer) }}</strong>
+                    </div>
                   </div>
                 </div>
 
-                <WorkbenchCanvas
-                  ref="canvasRef"
-                  :initial-graph="{ nodes: graphNodes, edges: graphEdges }"
-                  @graph-change="syncGraph"
-                  @selection-change="setSelectedElement"
-                  @element-deleted="handleCanvasElementDeleted"
-                  @node-added="handleCanvasNodeAdded"
-                />
-              </div>
-
-              <div class="canvas-stage__footer">
-                <div class="canvas-inline-status">
-                  <span>进度</span>
-                  <strong>{{ runtimeProgressPercent }}%</strong>
-                  <div class="progress-track progress-track--inline">
-                    <span class="progress-track__bar" :style="{ width: `${runtimeProgressPercent}%` }"></span>
+                <div class="canvas-stage__footer canvas-stage__footer--focus">
+                  <div class="canvas-inline-status canvas-inline-status--metric">
+                    <span>进度</span>
+                    <strong>{{ runtimeProgressPercent }}%</strong>
+                    <div class="progress-track progress-track--inline">
+                      <span class="progress-track__bar" :style="{ width: `${runtimeProgressPercent}%` }"></span>
+                    </div>
                   </div>
-                </div>
-                <div class="canvas-inline-status canvas-inline-status--log">
-                  <span>日志</span>
-                  <strong>{{ logs.length }} 条</strong>
-                  <div class="log-preview">{{ latestLogText }}</div>
+                  <div class="canvas-inline-status canvas-inline-status--metric">
+                    <span>状态</span>
+                    <strong>{{ runtimeStatusText }}</strong>
+                    <small>{{ deployedTaskCount }} 个任务已部署</small>
+                  </div>
+                  <div class="canvas-inline-status canvas-inline-status--metric">
+                    <span>时间</span>
+                    <strong>{{ runtime.simTime.toFixed(1) }}s</strong>
+                    <small>视界 {{ runtimeHorizonSeconds.toFixed(1) }}s</small>
+                  </div>
+                  <div class="canvas-inline-status canvas-inline-status--log">
+                    <span>日志</span>
+                    <strong>{{ logs.length }} 条</strong>
+                    <div class="log-preview">{{ latestLogText }}</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -757,30 +847,23 @@
           @deploy-all="handleDeployAllTasks"
           @clear-tasks="handleClearTasks"
         />
+
+        <div class="drawer-confirm-row">
+          <a-button type="primary" @click="leftDrawerOpen = false">确认并返回主界面</a-button>
+        </div>
       </a-drawer>
 
-      <a-drawer
-        :open="propertyDrawerOpen"
-        placement="right"
-        :width="420"
-        :body-style="{ padding: '16px', background: '#f5f9ff' }"
-        @close="propertyDrawerOpen = false"
-      >
-        <template #title>属性详细编辑</template>
-        <PropertyInspector
-          :selected-node="selectedNode"
-          :selected-edge="selectedEdge"
-          :fault-preview="faultPreview"
-          @patch-node="handleInspectorPatch"
-          @delete-selection="deleteCanvasSelection"
-        />
-      </a-drawer>
     </template>
     <template v-else-if="activeView === 'generation'">
       <section class="generation-layout">
         <header class="generation-header panel-card">
           <div class="generation-header__title">
             <span class="focus-kicker">模板建模</span>
+            <div class="generation-header__route">
+              <span class="meta-chip meta-chip--stage">02 故障建模</span>
+              <span class="meta-chip">模板 {{ faultTemplates.length }}</span>
+              <span class="meta-chip">参数 {{ generationParameterCount }}</span>
+            </div>
             <div class="generation-header__headline">
               <h2>建模工作台</h2>
               <div class="generation-header__brief">
@@ -795,6 +878,7 @@
 
           <div class="generation-header__actions">
             <a-button type="primary" @click="handleSaveTemplateAndReturn">保存并返回主界面</a-button>
+            <a-button @click="openLibraryDrawer">返回并打开模块库</a-button>
             <a-button @click="activeView = 'overview'">返回主界面</a-button>
           </div>
         </header>
@@ -812,10 +896,123 @@
         />
       </section>
     </template>
+    <template v-else-if="activeView === 'configuration'">
+      <section class="generation-layout generation-layout--configuration">
+        <header class="generation-header panel-card generation-header--configuration">
+          <div class="generation-header__title">
+            <span class="focus-kicker">故障配置</span>
+            <div class="generation-header__route">
+              <span class="meta-chip meta-chip--stage">03 故障配置</span>
+              <span class="meta-chip">模板 {{ faultTemplates.length }}</span>
+              <span class="meta-chip">任务 {{ injectionTasks.length }}</span>
+            </div>
+            <div class="generation-header__headline">
+              <h2>注入配置工作台</h2>
+              <div class="generation-header__brief">
+                <span class="meta-chip">{{ taskDraft.templateName || '未选择模板' }}</span>
+                <span class="meta-chip">{{ layerLabel(taskDraft.layer) }}</span>
+                <span class="meta-chip">{{ currentMethodLabel }}</span>
+              </div>
+            </div>
+            <p>从已建故障模板出发，配置注入层级、位置、方法和触发规则，再批量部署到系统总布图。</p>
+          </div>
+
+          <div class="generation-header__actions">
+            <a-button type="primary" @click="activeView = 'overview'">确认并返回主界面</a-button>
+            <a-button @click="openTaskDrawer">打开配置抽屉</a-button>
+            <a-button @click="activeView = 'generation'">返回故障建模</a-button>
+          </div>
+        </header>
+
+        <section class="configuration-layout">
+          <aside class="configuration-aside panel-card">
+            <div class="configuration-summary-card">
+              <span class="focus-kicker">流程摘要</span>
+              <h3>当前注入目标</h3>
+              <div class="configuration-summary-grid">
+                <div class="configuration-stat">
+                  <span>当前模板</span>
+                  <strong>{{ taskDraft.templateName || '未选择模板' }}</strong>
+                </div>
+                <div class="configuration-stat">
+                  <span>注入层级</span>
+                  <strong>{{ layerLabel(taskDraft.layer) }}</strong>
+                </div>
+                <div class="configuration-stat">
+                  <span>注入方法</span>
+                  <strong>{{ currentMethodLabel }}</strong>
+                </div>
+                <div class="configuration-stat">
+                  <span>时间窗口</span>
+                  <strong>{{ taskWindowText }}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="configuration-summary-card configuration-summary-card--soft">
+              <div class="section-head section-head--compact">
+                <strong>进入条件</strong>
+                <span>必须先完成前两步</span>
+              </div>
+              <div class="configuration-gate-list">
+                <div class="configuration-gate-item" :class="{ 'configuration-gate-item--done': hasSystemModel }">
+                  <span></span>
+                  <p>已建立多信号传播模型</p>
+                </div>
+                <div class="configuration-gate-item" :class="{ 'configuration-gate-item--done': faultTemplates.length > 0 }">
+                  <span></span>
+                  <p>已至少建立 1 个故障模板</p>
+                </div>
+                <div class="configuration-gate-item" :class="{ 'configuration-gate-item--done': injectionTasks.length > 0 }">
+                  <span></span>
+                  <p>已生成待部署的注入任务</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="configuration-summary-card configuration-summary-card--soft">
+              <div class="section-head section-head--compact">
+                <strong>操作入口</strong>
+                <span>保留旧窗口调用</span>
+              </div>
+              <div class="configuration-quick-actions">
+                <a-button @click="openLibraryDrawer">模块库</a-button>
+                <a-button @click="propertyDrawerOpen = true" :disabled="!selectedNode && !selectedEdge">属性窗</a-button>
+                <a-button @click="activeView = 'execution'" :disabled="!deployedTaskCount">进入仿真</a-button>
+              </div>
+            </div>
+          </aside>
+
+          <InjectionTaskPanel
+            class="configuration-panel-shell"
+            layout="page"
+            v-model:draft="taskDraft"
+            :templates="faultTemplates"
+            :tasks="injectionTasks"
+            :current-template="currentTaskTemplate"
+            :method-options="currentTaskMethodOptions"
+            :method-meta="currentMethodMeta"
+            :location-options="graphLocations"
+            :channel-options="graphChannels"
+            @use-template="selectTemplateForInjection"
+            @create-task="handleCreateTask"
+            @deploy-task="handleDeployTask"
+            @clone-task="cloneInjectionTask"
+            @remove-task="handleRemoveTask"
+            @deploy-all="handleDeployAllTasks"
+            @clear-tasks="handleClearTasks"
+          />
+        </section>
+      </section>
+    </template>
     <template v-else>
       <section class="focus-layout">
         <aside class="focus-aside panel-card">
           <span class="focus-kicker">{{ currentViewMeta.kicker }}</span>
+          <div class="focus-route">
+            <span class="meta-chip meta-chip--stage">{{ activeView === 'execution' ? '04 仿真执行' : '05 结果分析' }}</span>
+            <span class="meta-chip">{{ runtimeStatusText }}</span>
+          </div>
           <h2>{{ currentViewMeta.title }}</h2>
           <p>{{ currentViewMeta.description }}</p>
 
@@ -835,6 +1032,7 @@
 
           <div class="focus-actions">
             <a-button type="primary" @click="activeView = 'overview'">返回主界面</a-button>
+            <a-button @click="openTaskDrawer">打开配置窗</a-button>
             <a-button class="header-modeling-btn header-modeling-btn--small" @click="openModelingModal()">故障生成</a-button>
           </div>
         </aside>
@@ -873,6 +1071,108 @@
       </section>
     </template>
 
+    <transition name="property-flyout">
+      <aside v-if="propertyDrawerOpen" class="property-flyout">
+        <div class="property-flyout__head">
+          <div class="property-flyout__copy">
+            <span class="panel-head-pill">属性设置</span>
+            <div>
+              <strong>节点属性浮窗</strong>
+              <small>和模板库同层悬浮，便于对照画布实时微调参数。</small>
+            </div>
+          </div>
+          <a-button size="small" @click="propertyDrawerOpen = false">关闭</a-button>
+        </div>
+
+        <div class="property-flyout__body">
+          <PropertyInspector
+            :selected-node="selectedNode"
+            :selected-edge="selectedEdge"
+            :fault-preview="faultPreview"
+            @patch-node="handleInspectorPatch"
+            @delete-selection="deleteCanvasSelection"
+          />
+        </div>
+      </aside>
+    </transition>
+
+    <transition name="scope-modal">
+      <div
+        v-if="scopeModalOpen && activeView === 'overview'"
+        class="scope-modal-backdrop"
+        @click.self="scopeModalOpen = false"
+      >
+        <section class="panel-card scope-modal">
+          <div class="scope-modal__head">
+            <div class="scope-modal__copy">
+              <span class="panel-head-pill">示波器波形</span>
+              <div>
+                <strong>总览页快速示波</strong>
+                <small>在主页面直接查看示波器曲线、当前信号值和运行时间。</small>
+              </div>
+            </div>
+
+            <div class="scope-modal__actions">
+              <a-select
+                v-if="scopeOptions.length"
+                v-model:value="activeScopeId"
+                size="small"
+                class="scope-modal__select"
+              >
+                <a-select-option v-for="item in scopeOptions" :key="item.id" :value="item.id">
+                  {{ item.name }}
+                </a-select-option>
+              </a-select>
+              <a-button size="small" @click="activeView = 'execution'; scopeModalOpen = false">进入执行</a-button>
+              <a-button size="small" @click="scopeModalOpen = false">关闭</a-button>
+            </div>
+          </div>
+
+          <div class="scope-modal__meta">
+            <div class="scope-stat-card">
+              <span>运行状态</span>
+              <strong>{{ runtimeStatusText }}</strong>
+            </div>
+            <div class="scope-stat-card">
+              <span>仿真时间</span>
+              <strong>{{ runtime.simTime.toFixed(1) }}s</strong>
+            </div>
+            <div class="scope-stat-card">
+              <span>当前信号</span>
+              <strong>{{ currentSignalValue }}</strong>
+            </div>
+            <div class="scope-stat-card">
+              <span>采样窗口</span>
+              <strong>{{ activeScopeMeta?.sampleWindow ?? '--' }}</strong>
+            </div>
+          </div>
+
+          <div class="scope-modal__body">
+            <div v-if="scopeOptions.length" class="scope-modal__chart">
+              <div class="scope-modal__chart-head">
+                <div>
+                  <strong>{{ activeScopeMeta?.name || '示波器' }}</strong>
+                  <small>实时曲线会跟随当前工作区中的示波器节点同步刷新。</small>
+                </div>
+                <span class="scope-chart-badge">{{ scopeOptions.length }} 个示波器可切换</span>
+              </div>
+              <TrendChart :option="liveScopeOption" height="100%" />
+            </div>
+            <div v-else class="scope-modal__empty">
+              <span class="scope-modal__empty-token">SCP</span>
+              <strong>当前画布还没有示波器节点</strong>
+              <p>先在左侧模块库中拖入示波器，连接到流程链路后，这里会显示实时波形。</p>
+            </div>
+          </div>
+
+          <div class="scope-modal__footer">
+            <small>建议在总览页用这个弹窗快速查看波形，在执行页继续查看日志与任务状态。</small>
+            <a-button size="small" type="primary" ghost @click="openLibraryDrawer">打开模板库</a-button>
+          </div>
+        </section>
+      </div>
+    </transition>
+
   </div>
 </template>
 
@@ -899,14 +1199,15 @@ import ExecutionPanel from './components/panels/ExecutionPanel.vue';
 import AnalysisPanel from './components/panels/AnalysisPanel.vue';
 import PropertyInspector from './components/panels/PropertyInspector.vue';
 import TemplateModelingPanel from './components/panels/TemplateModelingPanel.vue';
+import TrendChart from './components/charts/TrendChart.vue';
 import WorkbenchCanvas from './components/workbench/WorkbenchCanvas.vue';
 
 const STORAGE_KEY = 'exp_0312_workspace_v2';
 
 const viewOptions = [
   { value: 'overview', shortLabel: '总览', label: '主界面总览' },
-  { value: 'generation', shortLabel: '建模', label: '故障模板建模' },
-  { value: 'execution', shortLabel: '执行', label: '执行工作台' },
+  { value: 'generation', shortLabel: '建模', label: '故障建模工作台' },
+  { value: 'execution', shortLabel: '仿真', label: '仿真工作台' },
   { value: 'analysis', shortLabel: '分析', label: '结果分析' },
 ];
 
@@ -925,9 +1226,11 @@ const activeView = ref('overview');
 const libraryExpanded = ref(false);
 const leftDrawerOpen = ref(false);
 const propertyDrawerOpen = ref(false);
+const scopeModalOpen = ref(false);
 const activeTemplateFilter = ref('all');
 const templateKeyword = ref('');
 const activeLibraryPane = ref('faults');
+const libraryCatalogCollapsed = ref(false);
 const canvasGuideMode = ref('idle');
 const canvasGuideTitle = ref('');
 const canvasGuideText = ref('');
@@ -1035,6 +1338,39 @@ const runtimeProgressPercent = computed(() => {
 const latestLogText = computed(() => logs.value.at(-1)?.text || '平台已就绪');
 const taskWindowText = computed(() => `${Number(taskDraft.triggerStart).toFixed(1)}s - ${(Number(taskDraft.triggerStart) + Number(taskDraft.duration)).toFixed(1)}s`);
 const selectedTargetText = computed(() => `${taskDraft.location || '--'} / ${taskDraft.channel || '--'}`);
+const hasSystemModel = computed(() => (
+  graphNodes.value.some((node) => ['source', 'system', 'scope'].includes(node.properties?.group))
+));
+const workflowCurrentIndex = computed(() => {
+  if (!hasSystemModel.value) return 0;
+  if (!faultTemplates.value.length) return 1;
+  if (!injectionTasks.value.length) return 2;
+  if (runtime.status === 'completed' || runtime.simTime > 0) return 4;
+  return 3;
+});
+const workflowSteps = computed(() => {
+  const current = workflowCurrentIndex.value;
+  const steps = [
+    { key: 'model', index: '01', label: '多信号传播建模', hint: hasSystemModel.value ? '总布图已具备基础链路' : '请导入模型或拖入基础模块', activeText: '建模中' },
+    { key: 'fault-model', index: '02', label: '故障建模', hint: `${faultTemplates.value.length} 个模板可用`, activeText: '建模中' },
+    { key: 'fault-config', index: '03', label: '故障配置', hint: `${injectionTasks.value.length} 个任务待部署`, activeText: '配置中' },
+    { key: 'simulation', index: '04', label: '仿真执行', hint: `${deployedTaskCount.value} 个任务已部署`, activeText: runtime.status === 'running' ? '运行中' : '待启动' },
+    { key: 'analysis', index: '05', label: '结果分析', hint: runtime.simTime > 0 ? '可对比查看指标与波形' : '等待仿真结果', activeText: '分析中' },
+  ];
+
+  return steps.map((item, index) => {
+    const state = index < current ? 'done' : index === current ? 'active' : 'pending';
+    return {
+      ...item,
+      state,
+      stateText: state === 'done' ? '已完成' : state === 'active' ? item.activeText : '未开始',
+    };
+  });
+});
+const workflowHeadline = computed(() => {
+  const current = workflowSteps.value[workflowCurrentIndex.value];
+  return `当前处于「${current.label}」阶段，${current.hint}。`;
+});
 
 const runFlowSteps = computed(() => {
   const runtimeFlowState = runtime.status === 'running'
@@ -1080,6 +1416,9 @@ const runFlowSteps = computed(() => {
 });
 
 const currentMethodLabel = computed(() => injectionMethodLabel(taskDraft.method));
+const activeScopeMeta = computed(() => (
+  scopeOptions.value.find((item) => item.id === activeScopeId.value) || scopeOptions.value[0] || null
+));
 const libraryPaneOptions = [
   { value: 'faults', label: '故障模板' },
   { value: 'modules', label: '基础模块' },
@@ -1174,9 +1513,9 @@ const canvasGuide = computed(() => {
   if (!hasCanvasContent.value) {
     return {
       mode: 'empty',
-      token: '空态',
-      title: '先拖入模板或模块',
-      text: '左侧模板库支持直接拖拽到总布图，再连线并部署任务。',
+      token: '步骤 1',
+      title: '请先导入模型完成建模',
+      text: '先导入已有模型或加载示例模型，再补全多信号传播链路、故障节点与示波器观测点。',
     };
   }
 
@@ -1284,13 +1623,19 @@ function openLibraryDrawer() {
   propertyDrawerOpen.value = false;
 }
 
+function toggleLibraryCatalog(force) {
+  libraryCatalogCollapsed.value = typeof force === 'boolean' ? force : !libraryCatalogCollapsed.value;
+}
+
 function toggleLibraryExpanded(force) {
   activeView.value = 'overview';
   libraryExpanded.value = typeof force === 'boolean' ? force : !libraryExpanded.value;
 }
 
 function openTaskDrawer() {
+  activeView.value = 'overview';
   leftDrawerOpen.value = true;
+  propertyDrawerOpen.value = false;
 }
 
 function selectTemplateForInjection(templateId) {
@@ -1299,6 +1644,51 @@ function selectTemplateForInjection(templateId) {
 
 function fitCanvasView() {
   canvasRef.value?.fitView();
+}
+
+function handleWorkflowStepClick(stepKey) {
+  if (stepKey === 'model') {
+    activeView.value = 'overview';
+    fitCanvasView();
+    return;
+  }
+  if (stepKey === 'fault-model') {
+    handleOpenModelingEntry();
+    return;
+  }
+  if (stepKey === 'fault-config') {
+    handleOpenConfigEntry();
+    return;
+  }
+  if (stepKey === 'simulation') {
+    activeView.value = 'execution';
+    return;
+  }
+  if (stepKey === 'analysis') {
+    activeView.value = 'analysis';
+  }
+}
+
+function handleOpenModelingEntry() {
+  if (!hasSystemModel.value) {
+    message.warning('请先建立多信号传播模型。');
+    activeView.value = 'overview';
+    return;
+  }
+  openModelingModal(templateDraft.id || taskDraft.templateId);
+}
+
+function handleOpenConfigEntry() {
+  if (!hasSystemModel.value) {
+    message.warning('请先建立多信号传播模型。');
+    activeView.value = 'overview';
+    return;
+  }
+  if (!faultTemplates.value.length) {
+    message.warning('请先完成故障建模。');
+    return;
+  }
+  activeView.value = 'configuration';
 }
 
 function clearCanvasGuideTimer() {
@@ -1653,6 +2043,7 @@ watch(
     if (nextView !== 'overview') {
       leftDrawerOpen.value = false;
       propertyDrawerOpen.value = false;
+      scopeModalOpen.value = false;
     }
   },
 );
@@ -3881,6 +4272,1690 @@ onBeforeUnmount(() => {
 
   .canvas-stage__surface {
     min-height: 360px;
+  }
+}
+
+.overview-shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  min-height: 0;
+}
+
+.workflow-board {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.88fr) minmax(0, 1.12fr);
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  background:
+    radial-gradient(circle at top right, rgba(135, 184, 255, 0.14), transparent 26%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(247, 251, 255, 0.95));
+}
+
+.workflow-board__copy {
+  display: grid;
+  gap: 8px;
+}
+
+.workflow-board__kicker {
+  display: inline-flex;
+  width: fit-content;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(79, 134, 231, 0.12);
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.workflow-board__copy h2 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 24px;
+  line-height: 1.18;
+}
+
+.workflow-board__copy p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.workflow-board__steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.workflow-step-card {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgba(203, 219, 243, 0.92);
+  border-radius: 18px;
+  background: rgba(248, 251, 255, 0.9);
+}
+
+.workflow-step-card--done {
+  border-color: rgba(133, 174, 153, 0.68);
+  background: linear-gradient(180deg, rgba(247, 252, 249, 0.98), rgba(241, 249, 244, 0.95));
+}
+
+.workflow-step-card--active {
+  border-color: rgba(110, 154, 226, 0.92);
+  background: linear-gradient(180deg, rgba(244, 248, 255, 0.99), rgba(236, 244, 255, 0.94));
+  box-shadow: 0 10px 22px rgba(92, 112, 144, 0.08);
+}
+
+.workflow-step-card__index {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.workflow-step-card__copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.workflow-step-card__copy strong {
+  color: var(--text-strong);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.workflow-step-card__copy small,
+.workflow-step-card__state {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.workflow-step-card__state {
+  grid-column: 2;
+  font-weight: 700;
+}
+
+.top-shell__header {
+  grid-template-columns: minmax(280px, 1fr) auto minmax(430px, auto);
+  gap: 18px 20px;
+  padding: 18px 20px;
+}
+
+.top-brand__copy h1 {
+  font-size: 34px;
+  letter-spacing: -0.035em;
+}
+
+.top-brand__copy small {
+  font-size: 13px;
+  line-height: 1.55;
+  max-width: 760px;
+}
+
+.top-brand__meta {
+  gap: 10px;
+}
+
+.header-status,
+.header-meta,
+.metric-pill,
+.stage-chip,
+.mode-tag,
+.category-tag,
+.run-flow-state,
+.deploy-pill {
+  font-size: 12px;
+}
+
+.view-tab {
+  min-width: 86px;
+  height: 40px;
+  font-size: 13px;
+}
+
+.top-action-row {
+  gap: 10px;
+}
+
+.header-action-group {
+  gap: 6px;
+  padding: 4px;
+}
+
+.header-action-group--primary {
+  background: rgba(246, 249, 253, 0.98);
+}
+
+.top-action-row :deep(.ant-btn) {
+  min-width: 74px;
+}
+
+.top-action-row :deep(.header-action--modeling),
+.library-panel__head-buttons :deep(.header-action--modeling),
+.canvas-stage__head-actions :deep(.header-action--modeling) {
+  border-color: rgba(128, 86, 226, 0.35);
+  background: rgba(128, 86, 226, 0.1);
+  color: #6b42cc;
+}
+
+.overview-layout {
+  grid-template-columns: clamp(280px, 20vw, 300px) minmax(0, 1fr) clamp(276px, 19vw, 292px);
+  gap: 10px;
+}
+
+.library-panel--sidebar,
+.config-panel {
+  padding: 14px;
+  gap: 12px;
+}
+
+.library-panel__head-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.library-selected-card,
+.library-template-item,
+.library-module-item,
+.generation-load-card,
+.generation-template-item,
+.scope-inline-summary {
+  padding: 10px 11px;
+  border-radius: 16px;
+}
+
+.library-template-item span,
+.library-template-item small,
+.generation-template-item small,
+.library-template-item__summary,
+.library-module-row__copy small,
+.field-label,
+.param-field span,
+.config-tip span,
+.template-stat-card span,
+.summary-metric span,
+.analysis-mini-row span,
+.property-field label,
+.property-metric span,
+.empty-card,
+.property-empty p,
+.template-summary-card small,
+.template-quick-item small,
+.overview-task-item small {
+  font-size: 12px;
+}
+
+.library-module-row {
+  padding: 9px 10px;
+  border-radius: 14px;
+}
+
+.library-module-row__copy strong,
+.library-template-item strong,
+.generation-template-item strong {
+  font-size: 13px;
+}
+
+.library-browser-scroll {
+  gap: 10px;
+}
+
+.library-runtime-card,
+.config-method-banner,
+.config-task-board,
+.config-property-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(203, 219, 243, 0.92);
+  border-radius: 18px;
+  background: rgba(247, 250, 255, 0.9);
+}
+
+.library-runtime-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.library-runtime-box {
+  display: grid;
+  gap: 3px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(210, 221, 238, 0.9);
+}
+
+.library-runtime-box span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.library-runtime-box strong {
+  color: var(--text-strong);
+  font-size: 14px;
+}
+
+.library-runtime-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.scene-toolbar {
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.scene-toolbar__left {
+  gap: 10px;
+}
+
+.metric-cluster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.flow-strip--mini {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.flow-mini-item {
+  min-height: 62px;
+  padding: 10px 11px;
+  border-radius: 16px;
+}
+
+.flow-mini-item__copy {
+  gap: 4px;
+}
+
+.flow-mini-item__copy strong {
+  font-size: 13px;
+  white-space: normal;
+  line-height: 1.3;
+}
+
+.flow-mini-item__copy small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.scene-toolbar__actions {
+  align-items: center;
+}
+
+.tool-group {
+  justify-items: end;
+}
+
+.config-panel {
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  align-content: stretch;
+  overflow: hidden;
+}
+
+.config-panel__grid {
+  align-content: start;
+  gap: 8px;
+}
+
+.config-method-banner {
+  background: linear-gradient(180deg, rgba(244, 248, 255, 0.96), rgba(250, 252, 255, 0.92));
+}
+
+.config-method-banner span,
+.config-method-banner small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.config-method-banner strong {
+  color: var(--text-strong);
+  font-size: 15px;
+}
+
+.config-section {
+  gap: 8px;
+  padding: 11px;
+  border-radius: 16px;
+}
+
+.config-section__grid {
+  gap: 8px;
+}
+
+.config-panel__actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.config-task-board {
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
+.overview-task-list--scroll {
+  min-height: 0;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.overview-task-item--board {
+  padding: 10px 12px;
+  border: 1px solid rgba(203, 219, 243, 0.92);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.overview-task-item--board .overview-task-item__main {
+  gap: 5px;
+}
+
+.overview-task-item--board .overview-task-item__main small {
+  white-space: normal;
+  line-height: 1.45;
+}
+
+.task-legend {
+  border-top: 1px solid rgba(210, 223, 244, 0.92);
+  padding-top: 8px;
+}
+
+.task-legend summary {
+  cursor: pointer;
+  color: var(--primary-strong);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.task-legend__list {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.task-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.task-legend__item small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.task-legend__swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: 0 0 auto;
+}
+
+.task-legend__swatch--physical {
+  background: rgba(79, 149, 118, 0.75);
+}
+
+.task-legend__swatch--electrical {
+  background: rgba(79, 134, 231, 0.76);
+}
+
+.task-legend__swatch--protocol {
+  background: rgba(128, 86, 226, 0.72);
+}
+
+.config-property-card {
+  align-content: start;
+}
+
+.config-property-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.canvas-panel--main {
+  padding: 10px;
+}
+
+.canvas-stage {
+  gap: 10px;
+}
+
+.canvas-stage__head {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.canvas-stage__head small {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.canvas-stage__head-actions,
+.canvas-stage__status-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.canvas-stage__status {
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.canvas-stage__status-note {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.canvas-stage__surface {
+  border-radius: 20px;
+}
+
+.canvas-stage__toolbar {
+  top: 12px;
+  right: 12px;
+}
+
+.canvas-mini-button {
+  width: auto;
+  min-width: 52px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.canvas-empty-guide {
+  width: min(380px, calc(100% - 44px));
+  padding: 18px 16px;
+}
+
+.canvas-empty-guide strong {
+  font-size: 20px;
+}
+
+.canvas-empty-guide p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.canvas-stage__footer {
+  grid-template-columns: 240px minmax(0, 1fr);
+}
+
+.drawer-confirm-row {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 12px;
+}
+
+.property-flyout {
+  position: fixed;
+  top: 96px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 22;
+  width: min(436px, calc(100vw - 32px));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(212, 222, 236, 0.96);
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at top right, rgba(144, 189, 248, 0.16), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 250, 255, 0.96));
+  box-shadow: 0 24px 52px rgba(50, 84, 132, 0.16);
+  backdrop-filter: blur(12px);
+}
+
+.property-flyout__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.property-flyout__copy {
+  display: grid;
+  gap: 8px;
+}
+
+.property-flyout__copy strong {
+  display: block;
+  color: var(--text-strong);
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.property-flyout__copy small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.property-flyout__body {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.property-flyout__body :deep(.inspector-panel) {
+  height: 100%;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.property-flyout__body :deep(.panel-head) {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding-bottom: 12px;
+  background: linear-gradient(180deg, rgba(247, 250, 255, 0.98), rgba(247, 250, 255, 0.82) 72%, rgba(247, 250, 255, 0));
+}
+
+.property-flyout__body :deep(.panel-head h3) {
+  font-size: 17px;
+}
+
+.property-flyout__body :deep(.panel-head p),
+.property-flyout__body :deep(.field-block label),
+.property-flyout__body :deep(.summary-card span) {
+  font-size: 12px;
+}
+
+.property-flyout__body :deep(.inspector-stack) {
+  min-height: 0;
+  height: 100%;
+  padding-right: 4px;
+  overflow-y: auto;
+}
+
+.property-flyout-enter-active,
+.property-flyout-leave-active {
+  transition: transform 0.22s ease, opacity 0.22s ease;
+}
+
+.property-flyout-enter-from,
+.property-flyout-leave-to {
+  transform: translateX(18px);
+  opacity: 0;
+}
+
+.scope-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 28;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(235, 242, 252, 0.36);
+  backdrop-filter: blur(10px);
+}
+
+.scope-modal {
+  width: min(980px, calc(100vw - 48px));
+  height: min(640px, calc(100vh - 56px));
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 14px;
+  padding: 18px;
+  overflow: hidden;
+  border-radius: 30px;
+  border: 1px solid rgba(215, 224, 237, 0.96);
+  background:
+    radial-gradient(circle at top left, rgba(123, 171, 239, 0.12), transparent 26%),
+    radial-gradient(circle at right bottom, rgba(115, 204, 237, 0.08), transparent 22%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(246, 250, 255, 0.97));
+  box-shadow: 0 26px 58px rgba(46, 76, 122, 0.18);
+}
+
+.scope-modal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.scope-modal__copy {
+  display: grid;
+  gap: 8px;
+}
+
+.scope-modal__copy strong {
+  display: block;
+  color: var(--text-strong);
+  font-size: 21px;
+  line-height: 1.16;
+}
+
+.scope-modal__copy small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.scope-modal__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.scope-modal__select {
+  width: 220px;
+}
+
+.scope-modal__meta {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.scope-stat-card {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(213, 222, 235, 0.96);
+  background: rgba(248, 251, 255, 0.92);
+}
+
+.scope-stat-card span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.scope-stat-card strong {
+  color: var(--text-strong);
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.scope-modal__body {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.scope-modal__chart,
+.scope-modal__empty {
+  height: 100%;
+  min-height: 0;
+  border-radius: 24px;
+  border: 1px solid rgba(214, 224, 237, 0.98);
+  background:
+    linear-gradient(rgba(231, 237, 245, 0.55) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(231, 237, 245, 0.55) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(249, 251, 255, 0.96));
+  background-size: 24px 24px, 24px 24px, auto;
+}
+
+.scope-modal__chart {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 16px;
+}
+
+.scope-modal__chart-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.scope-modal__chart-head strong {
+  display: block;
+  color: var(--text-strong);
+  font-size: 16px;
+}
+
+.scope-modal__chart-head small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.scope-chart-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(79, 134, 231, 0.1);
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.scope-modal__chart :deep(.trend-chart) {
+  min-height: 0;
+  height: 100%;
+}
+
+.scope-modal__empty {
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  padding: 18px;
+  text-align: center;
+}
+
+.scope-modal__empty-token {
+  display: inline-grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  background: rgba(79, 134, 231, 0.12);
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.scope-modal__empty strong {
+  color: var(--text-strong);
+  font-size: 20px;
+  line-height: 1.18;
+}
+
+.scope-modal__empty p {
+  max-width: 34ch;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.scope-modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.scope-modal__footer small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.scope-modal-enter-active,
+.scope-modal-leave-active {
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.scope-modal-enter-from,
+.scope-modal-leave-to {
+  opacity: 0;
+}
+
+.scope-modal-enter-from .scope-modal,
+.scope-modal-leave-to .scope-modal {
+  transform: translateY(10px) scale(0.985);
+}
+
+.empty-card--compact {
+  padding: 10px 11px;
+  border-radius: 16px;
+}
+
+@media (max-width: 1600px) {
+  .flow-strip--mini {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1480px) and (min-width: 1181px) {
+  .overview-layout {
+    grid-template-columns: clamp(264px, 20vw, 284px) minmax(0, 1fr) clamp(258px, 19vw, 276px);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .scene-toolbar {
+    grid-column: 2;
+    grid-row: 1;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "filters actions"
+      "flow flow";
+    justify-items: stretch;
+  }
+
+  .config-panel {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    max-height: none;
+  }
+
+  .canvas-panel--main {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .workflow-board__steps {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1360px) and (min-width: 1181px) {
+  .top-shell__header {
+    grid-template-columns: minmax(240px, 1fr) auto minmax(360px, auto);
+  }
+
+  .workflow-board {
+    grid-template-columns: 1fr;
+  }
+
+  .workflow-board__steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .flow-strip--mini {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1180px) {
+  .overview-shell {
+    grid-template-rows: auto auto;
+  }
+
+  .workflow-board {
+    grid-template-columns: 1fr;
+  }
+
+  .workflow-board__steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .config-panel,
+  .library-panel--sidebar {
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 768px) {
+  .workflow-board__steps,
+  .library-runtime-grid,
+  .library-runtime-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .canvas-stage__footer {
+    grid-template-columns: 1fr;
+  }
+}
+
+.top-shell__header {
+  grid-template-columns: minmax(220px, 1fr) auto minmax(360px, auto);
+  align-items: center;
+  gap: 14px 18px;
+  padding: 12px 16px;
+}
+
+.top-brand {
+  display: grid;
+  gap: 6px;
+}
+
+.top-brand__copy {
+  display: grid;
+  gap: 4px;
+}
+
+.top-brand__copy h1 {
+  font-size: 30px;
+  line-height: 1.08;
+}
+
+.top-brand__copy small {
+  max-width: 520px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.top-nav {
+  justify-self: center;
+}
+
+.view-tabs--header {
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(245, 248, 253, 0.92);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
+}
+
+.view-tab {
+  min-width: 74px;
+  height: 38px;
+  padding: 0 18px;
+  font-size: 13px;
+  border-radius: 999px;
+}
+
+.top-action-row {
+  justify-self: end;
+  align-items: center;
+  gap: 10px;
+}
+
+.top-brand__meta--compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.header-action-group--compact {
+  padding: 4px;
+  gap: 4px;
+}
+
+.top-action-row :deep(.ant-btn) {
+  min-width: 64px;
+  height: 34px;
+  padding: 0 12px;
+}
+
+.overview-shell {
+  gap: 10px;
+}
+
+.workflow-board--linear {
+  display: block;
+  padding: 10px 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(247, 250, 255, 0.94));
+}
+
+.workflow-board__steps--linear {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0;
+}
+
+.workflow-arrow {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: "index label";
+  align-items: center;
+  gap: 0 10px;
+  min-width: 0;
+  padding: 12px 28px 12px 22px;
+  margin-left: -16px;
+  border: 1px solid rgba(208, 216, 228, 0.92);
+  background: linear-gradient(180deg, rgba(252, 253, 255, 0.98), rgba(245, 248, 253, 0.94));
+  color: var(--text-strong);
+  text-align: left;
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 50%, calc(100% - 18px) 100%, 0 100%, 18px 50%);
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.workflow-arrow:first-child {
+  margin-left: 0;
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 50%, calc(100% - 18px) 100%, 0 100%);
+  border-radius: 16px 0 0 16px;
+}
+
+.workflow-arrow:last-child {
+  border-radius: 0 16px 16px 0;
+}
+
+.workflow-arrow--done {
+  border-color: rgba(151, 182, 223, 0.94);
+  background: linear-gradient(180deg, rgba(248, 251, 255, 0.98), rgba(240, 246, 255, 0.94));
+}
+
+.workflow-arrow--active {
+  border-color: rgba(223, 112, 92, 0.72);
+  background: linear-gradient(180deg, rgba(255, 246, 244, 0.99), rgba(255, 239, 236, 0.95));
+}
+
+.workflow-arrow__index {
+  grid-area: index;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.18);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.workflow-arrow--active .workflow-arrow__index {
+  background: rgba(222, 88, 66, 0.9);
+  color: #fff;
+}
+
+.workflow-arrow--done .workflow-arrow__index {
+  background: rgba(79, 134, 231, 0.14);
+  color: var(--primary);
+}
+
+.workflow-arrow__label {
+  grid-area: label;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+.workflow-arrow__hint {
+  display: none;
+}
+
+.overview-layout {
+  position: relative;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0;
+}
+
+.library-panel--sidebar,
+.scene-toolbar,
+.config-panel {
+  display: none;
+}
+
+.canvas-panel--focus {
+  grid-column: 1;
+  grid-row: 1;
+  padding: 10px;
+  overflow: hidden;
+}
+
+.workspace-shell {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  gap: 10px;
+  height: 100%;
+  min-height: 0;
+}
+
+.workspace-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.workspace-rail__button {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 12px 6px;
+  border: 1px solid rgba(208, 217, 229, 0.92);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(251, 253, 255, 0.98), rgba(244, 248, 253, 0.95));
+  color: var(--text-strong);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.workspace-rail__button:not(:disabled):hover {
+  border-color: rgba(128, 158, 214, 0.94);
+  box-shadow: 0 10px 24px rgba(61, 94, 142, 0.08);
+  transform: translateY(-1px);
+}
+
+.workspace-rail__button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.workspace-rail__token {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: rgba(79, 134, 231, 0.12);
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.canvas-stage--focus {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 10px;
+  height: 100%;
+  min-height: 0;
+  padding: 12px;
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at top right, rgba(141, 184, 245, 0.08), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(247, 250, 255, 0.95));
+}
+
+.canvas-stage__head {
+  align-items: flex-start;
+}
+
+.canvas-stage__head strong {
+  font-size: 20px;
+  line-height: 1.18;
+}
+
+.canvas-stage__head small {
+  display: block;
+  max-width: 60ch;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.canvas-stage__head-actions {
+  gap: 8px;
+}
+
+.canvas-stage__status--focus {
+  align-items: center;
+  gap: 10px;
+  padding: 0 2px 2px;
+}
+
+.canvas-stage__surface {
+  min-height: 0;
+  border-radius: 24px;
+  background:
+    linear-gradient(rgba(230, 235, 241, 0.55) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(230, 235, 241, 0.55) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(249, 251, 255, 0.97));
+  background-size: 24px 24px, 24px 24px, auto;
+}
+
+.canvas-stage__toolbar {
+  top: 16px;
+  right: 16px;
+  gap: 8px;
+}
+
+.canvas-mini-button {
+  min-width: 56px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.canvas-empty-guide {
+  width: min(420px, calc(100% - 56px));
+  padding: 18px 18px 16px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(212, 220, 232, 0.96);
+  box-shadow: 0 20px 40px rgba(72, 97, 136, 0.08);
+}
+
+.canvas-empty-guide__token {
+  width: 38px;
+  height: 38px;
+  border-radius: 14px;
+  font-size: 13px;
+}
+
+.canvas-empty-guide strong {
+  font-size: 28px;
+  line-height: 1.12;
+}
+
+.canvas-empty-guide p {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.canvas-property-float {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  z-index: 3;
+  width: 228px;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(210, 220, 233, 0.96);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 16px 34px rgba(70, 92, 132, 0.12);
+}
+
+.canvas-property-float__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.canvas-property-float__head strong {
+  color: var(--text-strong);
+  font-size: 14px;
+}
+
+.canvas-property-float__grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 10px;
+}
+
+.canvas-property-float__grid span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.canvas-property-float__grid strong {
+  color: var(--text-strong);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.canvas-stage__footer--focus {
+  grid-template-columns: 180px 180px 180px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.canvas-inline-status--metric,
+.canvas-inline-status--log {
+  min-height: 72px;
+  padding: 10px 12px;
+  border-radius: 18px;
+  background: rgba(248, 251, 255, 0.92);
+  border: 1px solid rgba(211, 221, 234, 0.96);
+}
+
+.canvas-inline-status--metric small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.log-preview {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.library-drawer {
+  top: 12px;
+  left: 12px;
+  bottom: 12px;
+  width: min(380px, calc(100% - 32px));
+  border-radius: 26px;
+  box-shadow: 0 24px 48px rgba(44, 78, 132, 0.16), inset -1px 0 0 rgba(209, 224, 244, 0.9);
+}
+
+.generation-layout {
+  gap: 10px;
+}
+
+.generation-layout--configuration {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.generation-header {
+  padding: 14px 16px;
+  border-radius: 24px;
+}
+
+.generation-header--configuration {
+  background:
+    radial-gradient(circle at top right, rgba(214, 195, 120, 0.16), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(249, 250, 252, 0.95));
+}
+
+.generation-header__title {
+  gap: 8px;
+}
+
+.generation-header__route,
+.focus-route {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.meta-chip--stage {
+  background: rgba(223, 92, 75, 0.1);
+  color: #cc5a48;
+}
+
+.generation-header__headline h2,
+.focus-aside h2 {
+  font-size: 24px;
+}
+
+.generation-header__title p,
+.focus-aside > p {
+  max-width: 64ch;
+  font-size: 12px;
+}
+
+.generation-header__actions {
+  gap: 6px;
+}
+
+.generation-header__actions :deep(.ant-btn),
+.focus-actions :deep(.ant-btn) {
+  min-width: 112px;
+  height: 36px;
+  border-radius: 999px;
+}
+
+.focus-layout {
+  grid-template-columns: 256px minmax(0, 1fr);
+  gap: 12px;
+}
+
+.configuration-layout {
+  display: grid;
+  grid-template-columns: 268px minmax(0, 1fr);
+  gap: 12px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.configuration-aside {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-height: 0;
+  padding: 14px;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top left, rgba(226, 204, 118, 0.12), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(249, 252, 255, 0.94));
+}
+
+.configuration-summary-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(216, 221, 230, 0.92);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.configuration-summary-card .section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.configuration-summary-card h3 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 18px;
+}
+
+.configuration-summary-card--soft {
+  background: rgba(247, 249, 253, 0.88);
+}
+
+.configuration-summary-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.configuration-stat {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(246, 249, 255, 0.92);
+}
+
+.configuration-stat span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.configuration-stat strong {
+  color: var(--text-strong);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.section-head--compact {
+  align-items: center;
+}
+
+.configuration-gate-list {
+  display: grid;
+  gap: 8px;
+}
+
+.configuration-gate-item {
+  display: grid;
+  grid-template-columns: 12px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(220, 224, 231, 0.92);
+}
+
+.configuration-gate-item span {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.35);
+}
+
+.configuration-gate-item--done span {
+  background: rgba(74, 163, 99, 0.92);
+}
+
+.configuration-gate-item p {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.configuration-quick-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.configuration-quick-actions :deep(.ant-btn) {
+  height: 36px;
+  border-radius: 999px;
+}
+
+.configuration-panel-shell {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.focus-aside {
+  gap: 12px;
+  padding: 16px;
+  border-radius: 24px;
+}
+
+.focus-stats {
+  gap: 8px;
+}
+
+.focus-stat-card,
+.focus-step {
+  padding: 12px;
+  border-radius: 16px;
+}
+
+.focus-stat-card strong {
+  font-size: 18px;
+}
+
+.focus-step p {
+  font-size: 12px;
+}
+
+.focus-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.focus-main {
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+@media (max-width: 1440px) {
+  .workflow-board__steps--linear {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .workflow-arrow,
+  .workflow-arrow:first-child {
+    margin-left: 0;
+    clip-path: none;
+    border-radius: 16px;
+  }
+
+  .canvas-stage__footer--focus {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1180px) {
+  .top-shell__header {
+    grid-template-columns: 1fr;
+  }
+
+  .top-nav,
+  .top-action-row {
+    justify-self: stretch;
+  }
+
+  .workspace-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .configuration-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-rail {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .workspace-rail__button {
+    min-width: 120px;
+    grid-template-columns: auto 1fr;
+    justify-items: start;
+    align-items: center;
+    gap: 8px;
+    text-align: left;
+  }
+
+  .canvas-property-float {
+    position: static;
+    width: 100%;
+    margin-top: 12px;
+  }
+
+  .property-flyout {
+    top: 88px;
+    right: 12px;
+    bottom: 12px;
+    width: min(392px, calc(100vw - 24px));
+  }
+
+  .scope-modal {
+    width: min(940px, calc(100vw - 32px));
+    height: min(620px, calc(100vh - 32px));
+  }
+
+  .scope-modal__meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .workflow-board__steps--linear,
+  .canvas-stage__footer--focus {
+    grid-template-columns: 1fr;
+  }
+
+  .property-flyout {
+    left: 12px;
+    width: auto;
+  }
+
+  .scope-modal-backdrop {
+    padding: 12px;
+  }
+
+  .scope-modal {
+    width: 100%;
+    height: min(680px, calc(100vh - 24px));
+    padding: 14px;
+    border-radius: 24px;
+  }
+
+  .scope-modal__head,
+  .scope-modal__chart-head,
+  .scope-modal__footer {
+    display: grid;
+    gap: 10px;
+    justify-content: stretch;
+  }
+
+  .scope-modal__actions,
+  .scope-modal__meta {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .scope-modal__select {
+    width: 100%;
   }
 }
 </style>

@@ -27,7 +27,7 @@ body {
     radial-gradient(circle at 88% 10%, rgba(189, 219, 255, 0.11), transparent 16%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(248, 251, 254, 0.95)),
     linear-gradient(180deg, #f8fafe 0%, #f1f5fb 46%, #f8fbfe 100%);
-  overflow: auto;
+  overflow: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;

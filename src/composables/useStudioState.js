@@ -106,12 +106,13 @@ function cloneTemplateSnapshot(template = {}) {
 }
 
 function buildTaskDraft(template) {
-  const safeTemplate = cloneTemplateSnapshot(template || initialFaultTemplates[0]);
+  const hasTemplate = Boolean(template && (template.id || template.templateName || template.mode));
+  const safeTemplate = cloneTemplateSnapshot(template || {});
   const layer = inferLayerByCategory(safeTemplate.category);
   return {
     id: '',
-    templateId: safeTemplate.id,
-    templateName: safeTemplate.templateName,
+    templateId: hasTemplate ? safeTemplate.id : '',
+    templateName: hasTemplate ? safeTemplate.templateName : '',
     category: safeTemplate.category,
     mode: safeTemplate.mode,
     layer,
@@ -233,6 +234,13 @@ function createFaultNodeProperties(task, sourceTemplate) {
 }
 
 function createInitialGraph() {
+  return {
+    nodes: [],
+    edges: [],
+  };
+}
+
+function createBaselineGraph() {
   const sourcePalette = nodePalette.find((item) => item.group === 'source');
   const processPalette = nodePalette.find((item) => item.group === 'system');
   const scopePalette = nodePalette.find((item) => item.group === 'scope');
@@ -531,15 +539,15 @@ function scenarioGraphFromPreset(presetId, templates) {
   }
 
   return {
-    graph: createInitialGraph(),
+    graph: createBaselineGraph(),
     tasks: [],
   };
 }
 
 export function useStudioState() {
-  const faultTemplates = ref(initialFaultTemplates.map((item) => buildTemplateDraft(item)));
-  const templateDraft = reactive(buildTemplateDraft(faultTemplates.value[0]));
-  const taskDraft = reactive(buildTaskDraft(faultTemplates.value[0]));
+  const faultTemplates = ref([]);
+  const templateDraft = reactive(buildTemplateDraft({}));
+  const taskDraft = reactive(buildTaskDraft());
   const injectionTasks = ref([]);
   const initialGraph = createInitialGraph();
   const graphNodes = ref(initialGraph.nodes.map((item) => deepClone(item)));
@@ -798,7 +806,7 @@ export function useStudioState() {
   function deleteTemplate(templateId) {
     faultTemplates.value = faultTemplates.value.filter((item) => item.id !== templateId);
     if (!faultTemplates.value.some((item) => item.id === taskDraft.templateId)) {
-      taskDraft.templateId = faultTemplates.value[0]?.id || '';
+      Object.assign(taskDraft, buildTaskDraft(faultTemplates.value[0] || {}));
     }
     if (templateDraft.id === templateId) {
       resetTemplateDraft(faultTemplates.value[0] || {});
@@ -1140,12 +1148,12 @@ export function useStudioState() {
   function importWorkspaceSnapshot(snapshot) {
     const templates = Array.isArray(snapshot?.templates) && snapshot.templates.length > 0
       ? snapshot.templates.map((item) => buildTemplateDraft(item))
-      : initialFaultTemplates.map((item) => buildTemplateDraft(item));
+      : [];
     const templateMap = new Map(templates.map((item) => [item.id, item]));
 
     faultTemplates.value = templates;
-    Object.assign(templateDraft, buildTemplateDraft(snapshot?.templateDraft || templates[0]));
-    Object.assign(taskDraft, buildTaskDraft(templateMap.get(snapshot?.taskDraft?.templateId) || snapshot?.taskDraft || templates[0]));
+    Object.assign(templateDraft, buildTemplateDraft(snapshot?.templateDraft || templates[0] || {}));
+    Object.assign(taskDraft, buildTaskDraft(templateMap.get(snapshot?.taskDraft?.templateId) || snapshot?.taskDraft || templates[0] || {}));
     Object.assign(taskDraft, {
       ...taskDraft,
       ...deepClone(snapshot?.taskDraft || {}),
@@ -1191,10 +1199,9 @@ export function useStudioState() {
   }
 
   function resetWorkspace() {
-    const initialTemplates = initialFaultTemplates.map((item) => buildTemplateDraft(item));
-    faultTemplates.value = initialTemplates;
-    Object.assign(templateDraft, buildTemplateDraft(initialTemplates[0]));
-    Object.assign(taskDraft, buildTaskDraft(initialTemplates[0]));
+    faultTemplates.value = [];
+    Object.assign(templateDraft, buildTemplateDraft({}));
+    Object.assign(taskDraft, buildTaskDraft());
     injectionTasks.value = [];
     const graph = createInitialGraph();
     graphNodes.value = graph.nodes.map((item) => deepClone(item));

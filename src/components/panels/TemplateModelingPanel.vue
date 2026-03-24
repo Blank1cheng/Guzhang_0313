@@ -1002,4 +1002,46 @@ function summarizeTemplate(template) {
     justify-items: start;
   }
 }
+
+.modeling-panel {
+  padding: 16px 18px;
+}
+
+.editor-hero,
+.editor-section,
+.workspace-card {
+  border-radius: 18px;
+}
+
+.editor-hero strong {
+  font-size: 22px;
+}
+
+.editor-hero p,
+.workspace-head span,
+.section-head span,
+.parameter-copy small,
+.template-card__summary {
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.workspace-head strong,
+.section-head strong {
+  font-size: 15px;
+}
+
+.workspace-tab,
+.draft-pill,
+.hero-count,
+.meta-chip,
+.template-chip,
+.template-card__state {
+  font-size: 11px;
+}
+
+.parameter-card,
+.template-card {
+  border-radius: 16px;
+}
 </style>

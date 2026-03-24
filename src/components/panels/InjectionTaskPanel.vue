@@ -1,5 +1,5 @@
 ﻿<template>
-  <section class="panel-card task-panel">
+  <section :class="['panel-card', 'task-panel', { 'task-panel--page': layout === 'page' }]">
     <div class="panel-head">
       <div>
         <h3>注入任务配置</h3>
@@ -171,6 +171,7 @@ defineProps({
   methodMeta: { type: Object, default: null },
   locationOptions: { type: Array, required: true },
   channelOptions: { type: Array, required: true },
+  layout: { type: String, default: 'stack' },
 });
 
 const emit = defineEmits([
@@ -188,6 +189,12 @@ const emit = defineEmits([
 .task-panel {
   display: grid;
   gap: 14px;
+  min-height: 0;
+  padding: 16px;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top right, rgba(212, 196, 120, 0.08), transparent 20%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(247, 249, 252, 0.95));
 }
 
 .panel-head {
@@ -200,7 +207,7 @@ const emit = defineEmits([
 .panel-head h3 {
   margin: 0 0 4px;
   color: #2d4e78;
-  font-size: 18px;
+  font-size: 24px;
 }
 
 .panel-head p {
@@ -214,13 +221,19 @@ const emit = defineEmits([
   gap: 12px;
 }
 
+.task-panel--page .task-flow {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+}
+
 .section-card {
   display: grid;
   gap: 12px;
   padding: 14px;
   border: 1px solid rgba(189, 213, 247, 0.92);
-  border-radius: 18px;
+  border-radius: 20px;
   background: rgba(255, 255, 255, 0.88);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86), 0 12px 24px rgba(68, 90, 128, 0.05);
 }
 
 .section-head,
@@ -302,6 +315,23 @@ const emit = defineEmits([
   padding-right: 4px;
 }
 
+.task-panel--page .queue-card {
+  grid-column: 1 / -1;
+}
+
+.task-panel--page .queue-list {
+  max-height: none;
+  min-height: 0;
+}
+
+.task-panel--page .panel-head {
+  align-items: center;
+}
+
+.task-panel--page .queue-card {
+  min-height: 260px;
+}
+
 .task-tag {
   padding: 4px 8px;
   border-radius: 999px;
@@ -322,6 +352,12 @@ const emit = defineEmits([
   flex-wrap: wrap;
 }
 
+.queue-actions :deep(.ant-btn),
+.panel-head :deep(.ant-btn) {
+  height: 34px;
+  border-radius: 999px;
+}
+
 .empty-state {
   display: grid;
   place-items: center;
@@ -329,6 +365,16 @@ const emit = defineEmits([
   min-height: 120px;
   border-style: dashed;
   background: rgba(247, 250, 255, 0.72);
+}
+
+@media (max-width: 1120px) {
+  .task-panel--page .task-flow {
+    grid-template-columns: 1fr;
+  }
+
+  .task-panel--page .queue-card {
+    grid-column: auto;
+  }
 }
 
 @media (max-width: 720px) {
